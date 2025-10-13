@@ -1,0 +1,27 @@
+const Card = ({ 
+  children, 
+  title, 
+  subtitle,
+  actions,
+  className = '',
+  bodyClassName = '' 
+}) => {
+  return (
+    <div className={`bg-white rounded-lg shadow ${className}`}>
+      {(title || subtitle || actions) && (
+        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+          <div>
+            {title && <h3 className="text-lg font-semibold text-gray-900">{title}</h3>}
+            {subtitle && <p className="text-sm text-gray-600 mt-1">{subtitle}</p>}
+          </div>
+          {actions && <div className="flex items-center gap-2">{actions}</div>}
+        </div>
+      )}
+      <div className={`p-6 ${bodyClassName}`}>
+        {children}
+      </div>
+    </div>
+  );
+};
+
+export default Card;

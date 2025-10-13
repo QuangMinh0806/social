@@ -9,16 +9,21 @@ from pathlib import Path
 # Add parent directory to path
 sys.path.append(str(Path(__file__).parent))
 
-from config.database import init_db, close_db
+# Import models FIRST to register them with Base
+from models.model import Base
+from config.database import engine
 
 
 async def initialize_database():
     """Initialize database and create all tables"""
     print("🔧 Initializing database...")
-    print("📦 Creating tables...")
+    print("📦 Creating tables from models...")
     
     try:
-        await init_db()
+        # Create all tables from Base metadata
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        
         print("✅ Database initialized successfully!")
         print("✅ All tables created!")
         
@@ -37,9 +42,12 @@ async def initialize_database():
         
     except Exception as e:
         print(f"❌ Error initializing database: {e}")
+        import traceback
+        traceback.print_exc()
         sys.exit(1)
     finally:
-        await close_db()
+        # Dispose engine
+        await engine.dispose()
 
 
 if __name__ == "__main__":

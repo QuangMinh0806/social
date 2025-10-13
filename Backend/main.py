@@ -4,6 +4,10 @@ from fastapi.staticfiles import StaticFiles
 from core.config import settings
 from pathlib import Path
 
+# Import models to register them with Base
+from models.model import Base
+from config.database import engine
+
 # Import routers
 from routers import (
     auth_router,
@@ -54,6 +58,24 @@ app.include_router(analytics_router.router)
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize database on startup - create tables if they don't exist"""
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        print("✅ Database tables initialized successfully!")
+    except Exception as e:
+        print(f"⚠️ Warning: Could not initialize database: {e}")
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Cleanup on shutdown"""
+    await engine.dispose()
+    print("👋 Application shutdown complete")
 
 
 @app.get("/")

@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import NullPool
 import os
 from typing import AsyncGenerator
@@ -27,9 +27,6 @@ async_session_maker = sessionmaker(
     autoflush=False,
 )
 
-# Base class for models
-Base = declarative_base()
-
 
 # Dependency to get database session
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
@@ -46,6 +43,11 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 # Initialize database
 async def init_db():
+    """
+    Initialize database and create all tables
+    Note: Import models.model before calling this to register all tables
+    """
+    from models.model import Base
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 

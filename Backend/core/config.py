@@ -1,16 +1,16 @@
 import os
 from typing import Optional
+from dotenv import load_dotenv
 
-
+# Load các biến môi trường từ file .env
+load_dotenv()
 class Settings:
     """Application configuration settings"""
     
     # Database
     DATABASE_URL: str = os.getenv(
-        "DATABASE_URL",
-        "postgresql+asyncpg://postgres:password@localhost:5432/social_media_db"
-    )
-    
+        "DATABASE_URL")
+    print(f"Using DATABASE_URL: {DATABASE_URL}")
     # Application
     APP_NAME: str = "Social Media Auto Posting API"
     APP_VERSION: str = "1.0.0"

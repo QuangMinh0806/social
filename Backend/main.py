@@ -60,15 +60,15 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 
-@app.on_event("startup")
-async def startup_event():
-    """Initialize database on startup - create tables if they don't exist"""
-    try:
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-        print("✅ Database tables initialized successfully!")
-    except Exception as e:
-        print(f"⚠️ Warning: Could not initialize database: {e}")
+# @app.on_event("startup")
+# async def startup_event():
+#     """Initialize database on startup - create tables if they don't exist"""
+#     try:
+#         async with engine.begin() as conn:
+#             await conn.run_sync(Base.metadata.create_all)
+#         print("✅ Database tables initialized successfully!")
+#     except Exception as e:
+#         print(f"⚠️ Warning: Could not initialize database: {e}")
 
 
 @app.on_event("shutdown")

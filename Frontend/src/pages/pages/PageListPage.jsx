@@ -11,6 +11,7 @@ import Modal from '../../components/common/Modal';
 import Input from '../../components/common/Input';
 import Select from '../../components/common/Select';
 import Breadcrumb from '../../components/layout/Breadcrumb';
+import LoginWithFb from "../../components/LoginWithFb";
 
 const PageListPage = () => {
     const [pages, setPages] = useState([]);
@@ -184,12 +185,15 @@ const PageListPage = () => {
                 title="Danh sách Trang/Nhóm"
                 subtitle={`Tổng ${filteredPages.length}/${pages.length} trang`}
                 actions={
-                    <Button
-                        icon={<Plus size={20} />}
-                        onClick={() => setShowModal(true)}
-                    >
-                        Kết nối Page mới
-                    </Button>
+                    <div className="flex gap-3">
+                        <LoginWithFb />
+                        <Button
+                            icon={<Plus size={20} />}
+                            onClick={() => setShowModal(true)}
+                        >
+                            Kết nối Page mới
+                        </Button>
+                    </div>
                 }
             >
                 {/* Filter Controls */}

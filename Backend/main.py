@@ -25,7 +25,8 @@ from routers import (
     post_router,
     analytics_router,
     tiktok_router,
-    youtube_router
+    youtube_router,
+    facebook_router
 )
 
 
@@ -63,13 +64,12 @@ app.include_router(post_router.router)
 app.include_router(analytics_router.router)
 app.include_router(tiktok_router.router)
 app.include_router(youtube_router.router)
+app.include_router(facebook_router.router)
 
 # Mount static files directory for uploads
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
-
-
 
 
 # @app.on_event("startup")
@@ -83,50 +83,39 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 #         print(f"⚠️ Warning: Could not initialize database: {e}")
 
 
-
-
-# @app.on_event("shutdown")
-# async def shutdown_event():
-#     """Cleanup on shutdown"""
-#     await engine.dispose()
-#     print("👋 Application shutdown complete")
-
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Cleanup on shutdown"""
+    await engine.dispose()
+    print("👋 Application shutdown complete")
 
 
 
+@app.get("/tiktokHaQNpbAkImf0dbxp7GrOR7oF2H8vb3WZ.txt", response_class=PlainTextResponse)
+def verify_tiktok_file():
+
+    return "tiktok-developers-site-verification=HaQNpbAkImf0dbxp7GrOR7oF2H8vb3WZ"
+
+@app.get("/")
+async def root():
+    """Root endpoint - API health check"""
+    return {
+        "message": "Social Media Auto Posting API",
+        "version": settings.APP_VERSION,
+        "status": "running",
+        "docs": "/docs",
+        "redoc": "/redoc"
+    }
 
 
-# @app.get("/tiktokU74GmVrxhXNP2S6WyNleZb3v9EaI4v7q.txt", response_class=PlainTextResponse)
-# def verify_tiktok_file():
-
-
-#     return "tiktok-developers-site-verification=U74GmVrxhXNP2S6WyNleZb3v9EaI4v7q"
-
-
-# @app.get("/")
-# async def root():
-#     """Root endpoint - API health check"""
-#     return {
-#         "message": "Social Media Auto Posting API",
-#         "version": settings.APP_VERSION,
-#         "status": "running",
-#         "docs": "/docs",
-#         "redoc": "/redoc"
-#     }
-
-
-
-
-# @app.get("/health")
-# async def health_check():
-#     """Health check endpoint"""
-#     return {
-#         "status": "healthy",
-#         "service": settings.APP_NAME,
-#         "version": settings.APP_VERSION
-#     }
-
-
+@app.get("/health")
+async def health_check():
+    """Health check endpoint"""
+    return {
+        "status": "healthy",
+        "service": settings.APP_NAME,
+        "version": settings.APP_VERSION
+    }
 
 
 if __name__ == "__main__":

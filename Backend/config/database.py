@@ -3,19 +3,21 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import NullPool
 import os
 from typing import AsyncGenerator
+from dotenv import load_dotenv
 
+# Load các biến môi trường từ file .env
+load_dotenv()
 # Database configuration
 DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql+asyncpg://postgres:07072003@localhost:5432/social_v1"
-)
+    "DATABASE_URL")
 
+print(f"Using DATABASE_URL: {DATABASE_URL}")
 # Create async engine
 engine = create_async_engine(
     DATABASE_URL,
     echo=True,  # Set to False in production
     future=True,
-    poolclass=NullPool,  # Use NullPool for async or configure pool size
+    poolclass=NullPool,
 )
 
 # Create async session factory

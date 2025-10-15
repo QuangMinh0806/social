@@ -7,13 +7,10 @@ import os
 
 load_dotenv()  
 
-URL_BE = os.getenv("URL_BE")
-FB_CLIENT_ID = "1130979465654370"
-FB_CLIENT_SECRET = "dda15803ebe7785219a19f1a2823d777"
+FB_CLIENT_ID = os.getenv("FB_CLIENT_ID")
+FB_CLIENT_SECRET = os.getenv("FB_CLIENT_SECRET")
 
-# FB_CLIENT_ID = "1130979465654370"
-# FB_CLIENT_SECRET = "dda15803ebe7785219a19f1a2823d777"
-# REDIRECT_URI = f"{URL_BE}/facebook-pages/callback"
+
 
 
 
@@ -21,7 +18,6 @@ FB_CLIENT_SECRET = "dda15803ebe7785219a19f1a2823d777"
 REDIRECT_URI = "http://localhost:8000/facebook-pages/callback"
 
 
-print("URL_BE:", REDIRECT_URI)
 
 
 

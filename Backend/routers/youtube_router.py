@@ -1,6 +1,8 @@
 import os
+import tempfile
 from fastapi.responses import RedirectResponse
-from fastapi import APIRouter, Request, HTTPException
+from fastapi import APIRouter, Body, File, Form, Request, HTTPException, UploadFile
+import requests
 from services.youtube_service import YouTubeService
 
 router = APIRouter(prefix="/youtube", tags=["YouTube"])
@@ -109,6 +111,70 @@ def get_youtube_videos(access_token: str, max_results: int = 10):
     
     return youtube_service.get_channel_videos(access_token, max_results)
 
+@router.post("/upload")
+async def upload_video(
+    payload: dict = Body(...)
+):
+    print("Upload video payload:", payload)
+    video_url = payload.get("video_url")
+    access_token = payload.get("access_token")
+    title = payload.get("title", "Uploaded from FastAPI")
+    description = payload.get("description", "")
+    tags = payload.get("tags", "")  # Comma-separated string
+    try:
+        # Kiểm tra access token
+        if not access_token:
+            raise HTTPException(status_code=400, detail="Thiếu access_token")
+
+        # Tải video từ URL
+        response = requests.get(video_url, stream=True)
+        if response.status_code != 200:
+            raise HTTPException(status_code=400, detail="Không tải được video từ URL")
+
+        # Lưu tạm vào file để upload
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as tmp_file:
+            for chunk in response.iter_content(chunk_size=8192):
+                if chunk:
+                    tmp_file.write(chunk)
+            temp_path = tmp_file.name
+
+        # Chuẩn bị tags
+        tags_list = [t.strip() for t in tags.split(',')] if tags else None
+
+        # Gọi service upload
+        result = youtube_service.upload_video(
+            access_token=access_token,
+            file_path=temp_path,          # truyền đường dẫn file tạm
+            title=title,
+            description=description,
+            tags=tags_list,
+            category_id=22,
+            privacy_status="private"
+        )
+
+        # Cleanup file tạm
+        try:
+            os.unlink(temp_path)
+        except Exception as e:
+            print(f"Warning: Could not delete temp file: {e}")
+
+        return {
+            "success": True,
+            "message": "Video uploaded successfully",
+            "data": result
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        # Cleanup file tạm nếu có lỗi
+        if 'temp_path' in locals():
+            try:
+                os.unlink(temp_path)
+            except:
+                pass
+        raise HTTPException(status_code=500, detail=f"Upload error: {str(e)}")
+    
 @router.get("/test")
 def test_youtube_router():
     """Test endpoint để kiểm tra YouTube router"""
@@ -118,15 +184,16 @@ def test_youtube_router():
             "GET /youtube/connect - Kết nối với YouTube",
             "GET /youtube/callback - Callback sau khi đăng nhập",
             "GET /youtube/profile?access_token=xxx - Lấy thông tin channel",
-            "GET /youtube/videos?access_token=xxx - Lấy danh sách video"
+            "GET /youtube/videos?access_token=xxx - Lấy danh sách video",
+            "POST /youtube/upload - Upload video lên YouTube"
         ],
         "services": {
-            "youtube_service": "✅ Loaded",
-            "page_service": "✅ Loaded"
+            "youtube_service": "✅ Loaded"
         },
         "config": {
-            "client_id": youtube_service.client_id[:20] + "...",
+            "client_id": youtube_service.client_id[:20] + "..." if youtube_service.client_id else "Not set",
             "redirect_uri": youtube_service.redirect_uri,
             "scopes": youtube_service.scopes
         }
     }
+   

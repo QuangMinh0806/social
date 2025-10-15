@@ -218,3 +218,95 @@ class YouTubeService:
             
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Lỗi lấy videos: {str(e)}")
+
+    def upload_video(self, access_token, file_path, title, description, tags=None, category_id=22, privacy_status="private"):
+        """
+        Upload video lên YouTube
+        
+        Parameters:
+        - access_token: YouTube access token
+        - file_path: Đường dẫn đến file video
+        - title: Video title
+        - description: Video description
+        - tags: List of tags
+        - category_id: YouTube category ID
+        - privacy_status: private/unlisted/public
+        """
+        try:
+            import os
+            from googleapiclient.http import MediaFileUpload
+            
+            # Kiểm tra file tồn tại
+            if not os.path.exists(file_path):
+                raise Exception(f"File không tồn tại: {file_path}")
+            
+            # Tạo credentials từ access token
+            credentials = Credentials(token=access_token)
+            
+            # Build YouTube service
+            youtube = googleapiclient.discovery.build(
+                "youtube", "v3", 
+                credentials=credentials,
+                cache_discovery=False
+            )
+            
+            # Prepare video metadata
+            video_metadata = {
+                "snippet": {
+                    "title": title,
+                    "description": description,
+                    "categoryId": str(category_id)
+                },
+                "status": {
+                    "privacyStatus": privacy_status,
+                    "selfDeclaredMadeForKids": False
+                }
+            }
+            
+            # Add tags if provided
+            if tags and len(tags) > 0:
+                video_metadata["snippet"]["tags"] = tags[:500]  # YouTube limit
+            
+            # Create media upload object từ file path
+            media = MediaFileUpload(
+                file_path,
+                mimetype="video/*",
+                resumable=True
+            )
+            
+            # Execute upload
+            insert_request = youtube.videos().insert(
+                part=",".join(video_metadata.keys()),
+                body=video_metadata,
+                media_body=media
+            )
+            
+            # Upload with progress (simplified version)
+            response = None
+            while response is None:
+                try:
+                    status, response = insert_request.next_chunk()
+                    if status:
+                        print(f"Upload progress: {int(status.progress() * 100)}%")
+                except Exception as e:
+                    print(f"Upload chunk error: {e}")
+                    raise
+            
+            if response:
+                video_id = response.get("id")
+                video_url = f"https://www.youtube.com/watch?v={video_id}"
+                
+                return {
+                    "video_id": video_id,
+                    "video_url": video_url,
+                    "title": title,
+                    "description": description,
+                    "privacy_status": privacy_status,
+                    "upload_status": "completed"
+                }
+            else:
+                raise Exception("Upload failed - no response received")
+                
+        except Exception as e:
+            print(f"YouTube upload error: {e}")
+            raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")

@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from core.config import settings
 from pathlib import Path
+from fastapi.responses import PlainTextResponse
 
 # Import models to register them with Base
 from models.model import Base
@@ -20,7 +21,9 @@ from routers import (
     media_router,
     hashtag_router,
     post_router,
-    analytics_router
+    analytics_router,
+    tiktok_router,
+    facebook_router
 )
 
 # Create FastAPI app
@@ -53,6 +56,8 @@ app.include_router(media_router.router)
 app.include_router(hashtag_router.router)
 app.include_router(post_router.router)
 app.include_router(analytics_router.router)
+app.include_router(tiktok_router.router)
+app.include_router(facebook_router.router)
 
 # Mount static files directory for uploads
 UPLOAD_DIR = Path("uploads")
@@ -77,6 +82,12 @@ async def shutdown_event():
     await engine.dispose()
     print("👋 Application shutdown complete")
 
+
+
+@app.get("/tiktokHaQNpbAkImf0dbxp7GrOR7oF2H8vb3WZ.txt", response_class=PlainTextResponse)
+def verify_tiktok_file():
+
+    return "tiktok-developers-site-verification=HaQNpbAkImf0dbxp7GrOR7oF2H8vb3WZ"
 
 @app.get("/")
 async def root():

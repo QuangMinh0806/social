@@ -1,63 +1,31 @@
 import os
-import json
 import requests
 import googleapiclient.discovery
 from google.oauth2.credentials import Credentials
 from datetime import datetime, timedelta
-from pathlib import Path
 from fastapi import HTTPException
 
 class YouTubeService:
     def __init__(self):
-        self.base_dir = Path(__file__).resolve().parent.parent
-        self.client_secrets_file = self.base_dir / "routers" / "client_secret.json"
-        self.config = self._load_client_config()
-        
         # YouTube API endpoints
-        self.auth_url = self.config.get('auth_uri', "https://accounts.google.com/o/oauth2/auth")
-        self.token_url = self.config.get('token_uri', "https://oauth2.googleapis.com/token")
+        self.auth_url = "https://accounts.google.com/o/oauth2/auth"
+        self.token_url = "https://oauth2.googleapis.com/token"
         self.user_info_url = "https://www.googleapis.com/oauth2/v2/userinfo"
         
-        # OAuth settings
-        self.client_id = self.config['client_id']
-        self.client_secret = self.config['client_secret']
-        self.redirect_uri = "http://localhost:3000/youtube/callback"
+        # OAuth settings từ environment variables
+        self.client_id = os.getenv("YOUTUBE_CLIENT_ID")
+        self.client_secret = os.getenv("YOUTUBE_CLIENT_SECRET")
+        self.redirect_uri = os.getenv("YOUTUBE_REDIRECT_URI", "http://localhost:3000/youtube/callback")
+        
+        # Kiểm tra có đủ config không
+        if not self.client_id or not self.client_secret:
+            raise ValueError("Missing YouTube OAuth credentials. Please set YOUTUBE_CLIENT_ID and YOUTUBE_CLIENT_SECRET environment variables")
+        
         self.scopes = [
             "https://www.googleapis.com/auth/youtube.upload",
             "https://www.googleapis.com/auth/youtube.readonly",
             "https://www.googleapis.com/auth/userinfo.profile"
         ]
-
-    def _load_client_config(self):
-        """Load client configuration from client_secret.json file"""
-        try:
-            with open(self.client_secrets_file, 'r') as f:
-                config = json.load(f)
-                
-            # Lấy từ installed app config (Google Cloud Console tạo ra)
-            if 'installed' in config:
-                client_config = config['installed']
-            elif 'web' in config:
-                client_config = config['web']
-            else:
-                raise ValueError("Invalid client_secret.json format")
-                
-            return {
-                'client_id': client_config['client_id'],
-                'client_secret': client_config['client_secret'],
-                'auth_uri': client_config['auth_uri'],
-                'token_uri': client_config['token_uri']
-            }
-        except FileNotFoundError:
-            print("Warning: client_secret.json not found, using environment variables")
-            return {
-                'client_id': os.getenv("YOUTUBE_CLIENT_ID", "your_client_id_here"),
-                'client_secret': os.getenv("YOUTUBE_CLIENT_SECRET", "your_client_secret_here"),
-                'auth_uri': "https://accounts.google.com/o/oauth2/auth",
-                'token_uri': "https://oauth2.googleapis.com/token"
-            }
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Error loading client config: {str(e)}")
 
     def get_auth_url(self, state="youtube_auth_state_123"):
         """Tạo URL để user đăng nhập YouTube"""

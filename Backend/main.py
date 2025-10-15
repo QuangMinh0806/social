@@ -26,7 +26,8 @@ from routers import (
     analytics_router,
     tiktok_router,
     youtube_router,
-    facebook_router
+    facebook_router,
+    ai_router
 )
 
 
@@ -65,6 +66,7 @@ app.include_router(analytics_router.router)
 app.include_router(tiktok_router.router)
 app.include_router(youtube_router.router)
 app.include_router(facebook_router.router)
+app.include_router(ai_router.router)
 
 # Mount static files directory for uploads
 UPLOAD_DIR = Path("uploads")
@@ -72,15 +74,15 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 
-# @app.on_event("startup")
-# async def startup_event():
-#     """Initialize database on startup - create tables if they don't exist"""
-#     try:
-#         async with engine.begin() as conn:
-#             await conn.run_sync(Base.metadata.create_all)
-#         print("✅ Database tables initialized successfully!")
-#     except Exception as e:
-#         print(f"⚠️ Warning: Could not initialize database: {e}")
+@app.on_event("startup")
+async def startup_event():
+    """Initialize database on startup - create tables if they don't exist"""
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        print("✅ Database tables initialized successfully!")
+    except Exception as e:
+        print(f"⚠️ Warning: Could not initialize database: {e}")
 
 
 @app.on_event("shutdown")
@@ -91,10 +93,10 @@ async def shutdown_event():
 
 
 
-@app.get("/tiktokHaQNpbAkImf0dbxp7GrOR7oF2H8vb3WZ.txt", response_class=PlainTextResponse)
+@app.get("/tiktokKz3ZFxrOYv1t3PSMfoZUxZ1KzimgFWoD.txt", response_class=PlainTextResponse)
 def verify_tiktok_file():
 
-    return "tiktok-developers-site-verification=HaQNpbAkImf0dbxp7GrOR7oF2H8vb3WZ"
+    return "tiktok-developers-site-verification=Kz3ZFxrOYv1t3PSMfoZUxZ1KzimgFWoD"
 
 @app.get("/")
 async def root():

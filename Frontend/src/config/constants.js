@@ -94,6 +94,9 @@ export const ROUTES = {
   // AI Assistant
   AI_ASSISTANT: '/ai-assistant',
   
+  // Config
+  CONFIG: '/config',
+  
   // Settings
   SETTINGS: '/settings',
   PROFILE: '/profile',

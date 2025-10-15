@@ -7,6 +7,7 @@ import DashboardPage from "../pages/dashboard/DashboardPage";
 import PostListPage from "../pages/posts/PostListPage";
 import PostCreatePage from "../pages/posts/PostCreatePage";
 import PostEditPage from "../pages/posts/PostEditPage";
+import PostDetailPage from "../pages/posts/PostDetailPage";
 import PageListPage from "../pages/pages/PageListPage";
 import CalendarPage from "../pages/calendar/CalendarPage";
 import AnalyticsPage from "../pages/analytics/AnalyticsPage";
@@ -18,6 +19,7 @@ import MediaLibraryPage from "../pages/media/MediaLibraryPage";
 import EmployeeListPage from "../pages/employees/EmployeeListPage";
 import LoginPage from "../pages/auth/LoginPage";
 import NotFoundPage from "../pages/NotFoundPage";
+import Config from "../pages/config/Config";
 
 import { ROUTES } from "../config/constants";
 
@@ -32,6 +34,7 @@ const router = createBrowserRouter([
             // Posts routes
             { path: ROUTES.POSTS, element: <PostListPage /> },
             { path: ROUTES.POST_CREATE, element: <PostCreatePage /> },
+            { path: "/posts/:id", element: <PostDetailPage /> },
             { path: "/posts/:id/edit", element: <PostEditPage /> },
 
             // Calendar
@@ -56,6 +59,9 @@ const router = createBrowserRouter([
 
             // AI Assistant
             { path: ROUTES.AI_ASSISTANT, element: <AIAssistantPage /> },
+
+            // Config
+            { path: ROUTES.CONFIG, element: <Config /> },
         ],
     },
     {

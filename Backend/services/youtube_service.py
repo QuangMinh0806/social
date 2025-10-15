@@ -4,7 +4,8 @@ import googleapiclient.discovery
 from google.oauth2.credentials import Credentials
 from datetime import datetime, timedelta
 from fastapi import HTTPException
-
+from dotenv import load_dotenv as loadenv
+loadenv()
 class YouTubeService:
     def __init__(self):
         # YouTube API endpoints

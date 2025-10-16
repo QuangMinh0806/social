@@ -6,3 +6,4 @@ instance/
 .pytest_cache/
 client_secret.json
 token.json
+cookie.txt

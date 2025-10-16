@@ -19,6 +19,12 @@ class ConflictException(HTTPException):
         super().__init__(status_code=409, detail=detail)
 
 
+class CustomException(HTTPException):
+    """Custom exception for specific application errors"""
+    def __init__(self, detail: str, status_code: int = 400):
+        super().__init__(status_code=status_code, detail=detail)
+
+
 class UnauthorizedException(HTTPException):
     """Exception raised when user is not authorized"""
     def __init__(self, detail: str = "Unauthorized"):

@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, Query, UploadFile, File, Form, HTTPExcep
 from sqlalchemy.ext.asyncio import AsyncSession
 from config.database import get_db
 from controllers.media_controller import MediaController
+from controllers.video_import_controller import VideoImportController
 from models.model import MediaType
 from pydantic import BaseModel
 from typing import Optional, List
@@ -38,6 +39,19 @@ class MediaUpdate(BaseModel):
     thumbnail_url: Optional[str] = None
     is_processed: Optional[bool] = None
     tags: Optional[str] = None
+
+
+class VideoImportRequest(BaseModel):
+    urls: List[str]
+    platform: str
+    user_id: Optional[int] = 1
+    auto_remove_watermark: Optional[bool] = True
+    use_proxy: Optional[bool] = False
+
+
+class VideoInfoRequest(BaseModel):
+    url: str
+    platform: str
 
 
 @router.get("/")
@@ -125,6 +139,67 @@ async def mark_media_as_processed(
     controller = MediaController(db)
     return await controller.mark_as_processed(media_id)
 
+
+@router.post("/import-video")
+async def import_videos_from_urls(
+    request: VideoImportRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """Import videos from URLs"""
+    controller = VideoImportController(db)
+    
+    # Validate platform
+    supported_platforms = controller.get_supported_platforms()
+    platform_values = [p["value"] for p in supported_platforms]
+    
+    if request.platform not in platform_values:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Platform không được hỗ trợ. Các platform hỗ trợ: {', '.join(platform_values)}"
+        )
+    
+    # Validate URLs
+    if not request.urls or len(request.urls) == 0:
+        raise HTTPException(status_code=400, detail="Danh sách URL không được để trống")
+    
+    if len(request.urls) > 10:
+        raise HTTPException(status_code=400, detail="Tối đa 10 URL mỗi lần import")
+    
+    try:
+        result = await controller.import_videos_from_urls(
+            urls=request.urls,
+            platform=request.platform,
+            user_id=request.user_id,
+            auto_remove_watermark=request.auto_remove_watermark,
+            use_proxy=request.use_proxy
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/video-info")
+async def get_video_info(
+    request: VideoInfoRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """Get video information from URL without downloading"""
+    controller = VideoImportController(db)
+    
+    try:
+        result = await controller.get_video_info(request.url, request.platform)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/supported-platforms")
+async def get_supported_platforms():
+    """Get list of supported platforms for video import"""
+    controller = VideoImportController(None)  # No DB needed for this
+    return {
+        "platforms": controller.get_supported_platforms()
+    }
 
 # Thư mục lưu trữ uploads
 UPLOAD_DIR = Path("uploads")

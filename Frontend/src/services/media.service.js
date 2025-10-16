@@ -51,4 +51,16 @@ export const mediaService = {
     async markAsProcessed(id) {
         return await apiClient.patch(API_ENDPOINTS.MARK_PROCESSED(id));
     },
+
+    async importFromUrl(data) {
+        return await apiClient.post(`${API_ENDPOINTS.MEDIA}/import-video`, data);
+    },
+
+    async getVideoInfo(url, platform) {
+        return await apiClient.post(`${API_ENDPOINTS.MEDIA}/video-info`, { url, platform });
+    },
+
+    async getSupportedPlatforms() {
+        return await apiClient.get(`${API_ENDPOINTS.MEDIA}/supported-platforms`);
+    },
 };

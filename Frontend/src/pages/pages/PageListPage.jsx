@@ -12,7 +12,7 @@ import Input from '../../components/common/Input';
 import Select from '../../components/common/Select';
 import Breadcrumb from '../../components/layout/Breadcrumb';
 import LoginWithFb from "../../components/LoginWithFb";
-
+import ConnectWithYoutube from '../../components/ConnectWithYoutube';
 const PageListPage = () => {
     const [pages, setPages] = useState([]);
     const [platforms, setPlatforms] = useState([]);
@@ -78,7 +78,7 @@ const PageListPage = () => {
 
         try {
             setSubmitting(true);
-            
+
             // Prepare data with correct field names for API
             const apiData = {
                 page_name: formData.name,
@@ -96,7 +96,7 @@ const PageListPage = () => {
                 await pageService.create(apiData);
                 toast.success('Thêm trang thành công');
             }
-            
+
             setShowModal(false);
             setEditingPage(null);
             setFormData({ name: '', platform_id: '', page_id: '', access_token: '' });
@@ -140,10 +140,10 @@ const PageListPage = () => {
         return pages.filter(page => {
             const matchPlatform = filterPlatform === 'all' || page.platform_id === parseInt(filterPlatform);
             const matchStatus = filterStatus === 'all' || page.status === filterStatus;
-            const matchSearch = searchQuery === '' || 
+            const matchSearch = searchQuery === '' ||
                 page.page_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 page.page_id?.toLowerCase().includes(searchQuery.toLowerCase());
-            
+
             return matchPlatform && matchStatus && matchSearch;
         });
     }, [pages, filterPlatform, filterStatus, searchQuery]);
@@ -159,7 +159,7 @@ const PageListPage = () => {
                 <h2 className="text-xl font-semibold mb-4">Quản lý Page</h2>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
                     {Object.entries(platformStats).map(([platformId, stat]) => (
-                        <div 
+                        <div
                             key={platformId}
                             className="bg-white rounded-lg p-4 shadow-sm text-center hover:shadow-md transition-shadow cursor-pointer"
                             onClick={() => setFilterPlatform(filterPlatform === platformId ? 'all' : platformId)}
@@ -186,6 +186,7 @@ const PageListPage = () => {
                 subtitle={`Tổng ${filteredPages.length}/${pages.length} trang`}
                 actions={
                     <div className="flex gap-3">
+                        <ConnectWithYoutube />
                         <LoginWithFb />
                         <Button
                             icon={<Plus size={20} />}
@@ -207,7 +208,7 @@ const PageListPage = () => {
                             className="pl-10"
                         />
                     </div>
-                    
+
                     <Select
                         value={filterPlatform}
                         onChange={(e) => setFilterPlatform(e.target.value)}
@@ -239,8 +240,8 @@ const PageListPage = () => {
                             <div className="flex items-start justify-between mb-3">
                                 <div className="flex items-center gap-2">
                                     {page.avatar_url ? (
-                                        <img 
-                                            src={page.avatar_url} 
+                                        <img
+                                            src={page.avatar_url}
                                             alt={page.page_name}
                                             className="w-10 h-10 rounded-full object-cover"
                                         />
@@ -267,9 +268,9 @@ const PageListPage = () => {
                                     </p>
                                 )}
                                 {page.page_url && (
-                                    <a 
-                                        href={page.page_url} 
-                                        target="_blank" 
+                                    <a
+                                        href={page.page_url}
+                                        target="_blank"
                                         rel="noopener noreferrer"
                                         className="text-sm text-blue-600 hover:underline block truncate"
                                     >
@@ -312,7 +313,7 @@ const PageListPage = () => {
                 {filteredPages.length === 0 && (
                     <div className="text-center py-12">
                         <p className="text-gray-500">
-                            {searchQuery || filterPlatform !== 'all' || filterStatus !== 'all' 
+                            {searchQuery || filterPlatform !== 'all' || filterStatus !== 'all'
                                 ? 'Không tìm thấy trang nào phù hợp'
                                 : 'Chưa có trang nào'
                             }

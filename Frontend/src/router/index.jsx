@@ -19,6 +19,7 @@ import MediaLibraryPage from "../pages/media/MediaLibraryPage";
 import EmployeeListPage from "../pages/employees/EmployeeListPage";
 import LoginPage from "../pages/auth/LoginPage";
 import NotFoundPage from "../pages/NotFoundPage";
+import YoutubeCallback from "../pages/YoutubeCallback";
 import Config from "../pages/config/Config";
 
 import { ROUTES } from "../config/constants";
@@ -63,6 +64,10 @@ const router = createBrowserRouter([
             // Config
             { path: ROUTES.CONFIG, element: <Config /> },
         ],
+    },
+    {
+        path: "/youtube/callback",
+        element: <YoutubeCallback />,
     },
     {
         path: "/",

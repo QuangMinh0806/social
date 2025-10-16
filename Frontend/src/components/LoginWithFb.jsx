@@ -4,7 +4,7 @@ const FB_APP_ID = "1130979465654370";
 const Url = `http://localhost:8000`;
 const REDIRECT_URI = `${Url}/facebook-pages/callback`;
 
-const FB_SCOPE = "pages_show_list,pages_manage_metadata,pages_read_engagement,pages_messaging,email,pages_manage_posts,publish_video";
+const FB_SCOPE = "pages_show_list,pages_manage_metadata,pages_read_engagement,pages_manage_posts,publish_video,pages_messaging,email,instagram_basic,instagram_manage_insights,instagram_content_publish";
 
 export default function LoginWithFb() {
     const handleLogin = () => {

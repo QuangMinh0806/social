@@ -115,20 +115,26 @@ async def create_post(
     title: Optional[str] = Form(None),
     scheduled_at: Optional[str] = Form(None),
     video_url: Optional[str] = Form(None),  # Video URL từ thư viện
+    media_urls: List[str] = Form(None),  # URLs cho Instagram (mỗi dòng 1 URL)
     files: List[UploadFile] = File(None),
     db: AsyncSession = Depends(get_db)
 ):
-    """
-    Create new post with optional file uploads or video URL
-    
-    - Nhận file từ Frontend HOẶC video URL từ thư viện
-    - Upload trực tiếp lên Facebook (không lưu server)
-    - Tạo post trong database
-    """
+
     controller = PostController(db)
+    
+    # DEBUG: Log tất cả parameters
+    print(f"📥 [Router] Received parameters:")
+    print(f"  - user_id: {user_id}")
+    print(f"  - page_id: {page_id}")
+    print(f"  - post_type: {post_type}")
+    print(f"  - media_type: {media_type}")
+    print(f"  - media_urls (raw): {media_urls}")
+    print(f"  - files: {files}")
+    print(f"  - video_url: {video_url}")
     
     # Đọc file data từ uploads hoặc sử dụng video URL
     media_files = []
+    media_url_list = []
     
     if video_url:
         # Nếu có video_url từ thư viện, dùng URL thay vì file
@@ -139,6 +145,11 @@ async def create_post(
             file_data = await file.read()
             media_files.append(file_data)
     
+    # Nhận media_urls cho Instagram
+    if media_urls:
+        media_url_list = [url for url in media_urls if url and url.strip()]
+        print(f"📤 [Router] Processed media_urls: {media_url_list}")
+    
     # Tạo post data
     post_data = {
         "user_id": user_id,
@@ -147,7 +158,8 @@ async def create_post(
         "post_type": post_type,
         "status": status,
         "media_type": media_type,
-        "media_files": media_files,  # Truyền file data hoặc URLs
+        "media_files": media_files,  # Truyền file data (cho FB, TikTok, YouTube)
+        "media_urls": media_url_list,  # Truyền URLs (cho Instagram)
         "template_id": template_id,
         "title": title,
     }

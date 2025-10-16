@@ -1,5 +1,5 @@
 import apiClient from './api.service';
-import { API_ENDPOINTS } from '../config/api.config';
+import { API_ENDPOINTS, POST_CREATION_TIMEOUT } from '../config/api.config';
 
 export const postService = {
   /**
@@ -62,19 +62,23 @@ export const postService = {
   /**
    * Create new post
    * Supports both JSON and FormData (for file uploads)
+   * Uses extended timeout for multi-platform posting
    */
   async create(data) {
-    // Nếu data là FormData, gửi trực tiếp
+    // Nếu data là FormData, gửi trực tiếp với timeout dài hơn
     if (data instanceof FormData) {
       return await apiClient.post(API_ENDPOINTS.POSTS, data, {
         headers: {
           'Content-Type': 'multipart/form-data'
-        }
+        },
+        timeout: POST_CREATION_TIMEOUT // 5 phút cho việc đăng nhiều platform
       });
     }
     
-    // Nếu data là object thông thường, gửi JSON
-    return await apiClient.post(API_ENDPOINTS.POSTS, data);
+    // Nếu data là object thông thường, gửi JSON với timeout dài
+    return await apiClient.post(API_ENDPOINTS.POSTS, data, {
+      timeout: POST_CREATION_TIMEOUT
+    });
   },
 
   /**

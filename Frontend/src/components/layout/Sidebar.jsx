@@ -9,6 +9,7 @@ import {
   Image, 
   BarChart3, 
   Bot,
+  Settings,
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
@@ -28,6 +29,7 @@ const Sidebar = () => {
     { path: '/media', icon: Image, label: 'Thư viện Media' },
     { path: '/analytics', icon: BarChart3, label: 'Thống kê' },
     { path: '/ai-assistant', icon: Bot, label: 'AI Trợ lý' },
+    { path: '/config', icon: Settings, label: 'Cấu hình' },
   ];
 
   return (

@@ -12,7 +12,7 @@ router = APIRouter(prefix="/tiktok", tags=["TikTok"])
 CLIENT_KEY = "sbaw7q53fi2sp7s8lx"
 CLIENT_SECRET = "iXXyqL5mJt1jBUiM2ouFGowv4w6D2ohq"
 
-REDIRECT_URI = "https://645678ef505f.ngrok-free.app/tiktok/callback"
+REDIRECT_URI = "https://2c13d3c9bb1d.ngrok-free.app/tiktok/callback"
 
 # 1️⃣ Route: Bắt đầu đăng nhập TikTok
 @router.get("/login")

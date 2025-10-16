@@ -61,8 +61,19 @@ export const postService = {
 
   /**
    * Create new post
+   * Supports both JSON and FormData (for file uploads)
    */
   async create(data) {
+    // Nếu data là FormData, gửi trực tiếp
+    if (data instanceof FormData) {
+      return await apiClient.post(API_ENDPOINTS.POSTS, data, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+    }
+    
+    // Nếu data là object thông thường, gửi JSON
     return await apiClient.post(API_ENDPOINTS.POSTS, data);
   },
 

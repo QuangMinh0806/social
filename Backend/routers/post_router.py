@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends, Query, Body
+from fastapi import APIRouter, Depends, Query, Body, UploadFile, File, Form
 from sqlalchemy.ext.asyncio import AsyncSession
 from config.database import get_db
 from controllers.post_controller import PostController
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 
 
@@ -19,6 +19,7 @@ class PostCreate(BaseModel):
     post_type: str
     status: str = "draft"
     scheduled_at: Optional[datetime] = None
+    media_type: Optional[str] = "image"  # "image" or "video"
 
 
 class PostUpdate(BaseModel):
@@ -104,12 +105,57 @@ async def get_post_by_id(
 
 @router.post("/")
 async def create_post(
-    post: PostCreate,
+    user_id: int = Form(...),
+    page_id: int = Form(...),
+    content: str = Form(...),
+    post_type: str = Form(...),
+    status: str = Form("draft"),
+    media_type: str = Form("image"),
+    template_id: Optional[int] = Form(None),
+    title: Optional[str] = Form(None),
+    scheduled_at: Optional[str] = Form(None),
+    video_url: Optional[str] = Form(None),  # Video URL từ thư viện
+    files: List[UploadFile] = File(None),
     db: AsyncSession = Depends(get_db)
 ):
-    """Create new post"""
+    """
+    Create new post with optional file uploads or video URL
+    
+    - Nhận file từ Frontend HOẶC video URL từ thư viện
+    - Upload trực tiếp lên Facebook (không lưu server)
+    - Tạo post trong database
+    """
     controller = PostController(db)
-    return await controller.create(post.dict())
+    
+    # Đọc file data từ uploads hoặc sử dụng video URL
+    media_files = []
+    
+    if video_url:
+        # Nếu có video_url từ thư viện, dùng URL thay vì file
+        media_files = [video_url]  # Facebook API hỗ trợ URL
+    elif files:
+        # Nếu có files upload, đọc file data
+        for file in files:
+            file_data = await file.read()
+            media_files.append(file_data)
+    
+    # Tạo post data
+    post_data = {
+        "user_id": user_id,
+        "page_id": page_id,
+        "content": content,
+        "post_type": post_type,
+        "status": status,
+        "media_type": media_type,
+        "media_files": media_files,  # Truyền file data hoặc URLs
+        "template_id": template_id,
+        "title": title,
+    }
+    
+    if scheduled_at:
+        post_data["scheduled_at"] = datetime.fromisoformat(scheduled_at)
+    
+    return await controller.create(post_data)
 
 
 @router.put("/{post_id}")

@@ -91,6 +91,7 @@ export const API_ENDPOINTS = {
     CALCULATE_ENGAGEMENT: (postId) => `/analytics/posts/${postId}/engagement`,
 
     // AI Assistant
+    AI: '/ai',
     AI_GENERATE: '/ai/generate',
     AI_SUGGESTIONS: '/ai/suggestions',
     AI_CHAT: '/ai/chat',

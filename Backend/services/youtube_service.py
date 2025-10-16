@@ -1,63 +1,32 @@
 import os
-import json
 import requests
 import googleapiclient.discovery
 from google.oauth2.credentials import Credentials
 from datetime import datetime, timedelta
-from pathlib import Path
 from fastapi import HTTPException
-
+from dotenv import load_dotenv as loadenv
+loadenv()
 class YouTubeService:
     def __init__(self):
-        self.base_dir = Path(__file__).resolve().parent.parent
-        self.client_secrets_file = self.base_dir / "routers" / "client_secret.json"
-        self.config = self._load_client_config()
-        
         # YouTube API endpoints
-        self.auth_url = self.config.get('auth_uri', "https://accounts.google.com/o/oauth2/auth")
-        self.token_url = self.config.get('token_uri', "https://oauth2.googleapis.com/token")
+        self.auth_url = "https://accounts.google.com/o/oauth2/auth"
+        self.token_url = "https://oauth2.googleapis.com/token"
         self.user_info_url = "https://www.googleapis.com/oauth2/v2/userinfo"
         
-        # OAuth settings
-        self.client_id = self.config['client_id']
-        self.client_secret = self.config['client_secret']
-        self.redirect_uri = "http://localhost:3000/youtube/callback"
+        # OAuth settings từ environment variables
+        self.client_id = os.getenv("YOUTUBE_CLIENT_ID")
+        self.client_secret = os.getenv("YOUTUBE_CLIENT_SECRET")
+        self.redirect_uri = os.getenv("YOUTUBE_REDIRECT_URI", "http://localhost:3000/youtube/callback")
+        
+        # Kiểm tra có đủ config không
+        if not self.client_id or not self.client_secret:
+            raise ValueError("Missing YouTube OAuth credentials. Please set YOUTUBE_CLIENT_ID and YOUTUBE_CLIENT_SECRET environment variables")
+        
         self.scopes = [
             "https://www.googleapis.com/auth/youtube.upload",
             "https://www.googleapis.com/auth/youtube.readonly",
             "https://www.googleapis.com/auth/userinfo.profile"
         ]
-
-    def _load_client_config(self):
-        """Load client configuration from client_secret.json file"""
-        try:
-            with open(self.client_secrets_file, 'r') as f:
-                config = json.load(f)
-                
-            # Lấy từ installed app config (Google Cloud Console tạo ra)
-            if 'installed' in config:
-                client_config = config['installed']
-            elif 'web' in config:
-                client_config = config['web']
-            else:
-                raise ValueError("Invalid client_secret.json format")
-                
-            return {
-                'client_id': client_config['client_id'],
-                'client_secret': client_config['client_secret'],
-                'auth_uri': client_config['auth_uri'],
-                'token_uri': client_config['token_uri']
-            }
-        except FileNotFoundError:
-            print("Warning: client_secret.json not found, using environment variables")
-            return {
-                'client_id': os.getenv("YOUTUBE_CLIENT_ID", "your_client_id_here"),
-                'client_secret': os.getenv("YOUTUBE_CLIENT_SECRET", "your_client_secret_here"),
-                'auth_uri': "https://accounts.google.com/o/oauth2/auth",
-                'token_uri': "https://oauth2.googleapis.com/token"
-            }
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Error loading client config: {str(e)}")
 
     def get_auth_url(self, state="youtube_auth_state_123"):
         """Tạo URL để user đăng nhập YouTube"""
@@ -249,3 +218,95 @@ class YouTubeService:
             
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Lỗi lấy videos: {str(e)}")
+
+    def upload_video(self, access_token, file_path, title, description, tags=None, category_id=22, privacy_status="private"):
+        """
+        Upload video lên YouTube
+        
+        Parameters:
+        - access_token: YouTube access token
+        - file_path: Đường dẫn đến file video
+        - title: Video title
+        - description: Video description
+        - tags: List of tags
+        - category_id: YouTube category ID
+        - privacy_status: private/unlisted/public
+        """
+        try:
+            import os
+            from googleapiclient.http import MediaFileUpload
+            
+            # Kiểm tra file tồn tại
+            if not os.path.exists(file_path):
+                raise Exception(f"File không tồn tại: {file_path}")
+            
+            # Tạo credentials từ access token
+            credentials = Credentials(token=access_token)
+            
+            # Build YouTube service
+            youtube = googleapiclient.discovery.build(
+                "youtube", "v3", 
+                credentials=credentials,
+                cache_discovery=False
+            )
+            
+            # Prepare video metadata
+            video_metadata = {
+                "snippet": {
+                    "title": title,
+                    "description": description,
+                    "categoryId": str(category_id)
+                },
+                "status": {
+                    "privacyStatus": privacy_status,
+                    "selfDeclaredMadeForKids": False
+                }
+            }
+            
+            # Add tags if provided
+            if tags and len(tags) > 0:
+                video_metadata["snippet"]["tags"] = tags[:500]  # YouTube limit
+            
+            # Create media upload object từ file path
+            media = MediaFileUpload(
+                file_path,
+                mimetype="video/*",
+                resumable=True
+            )
+            
+            # Execute upload
+            insert_request = youtube.videos().insert(
+                part=",".join(video_metadata.keys()),
+                body=video_metadata,
+                media_body=media
+            )
+            
+            # Upload with progress (simplified version)
+            response = None
+            while response is None:
+                try:
+                    status, response = insert_request.next_chunk()
+                    if status:
+                        print(f"Upload progress: {int(status.progress() * 100)}%")
+                except Exception as e:
+                    print(f"Upload chunk error: {e}")
+                    raise
+            
+            if response:
+                video_id = response.get("id")
+                video_url = f"https://www.youtube.com/watch?v={video_id}"
+                
+                return {
+                    "video_id": video_id,
+                    "video_url": video_url,
+                    "title": title,
+                    "description": description,
+                    "privacy_status": privacy_status,
+                    "upload_status": "completed"
+                }
+            else:
+                raise Exception("Upload failed - no response received")
+                
+        except Exception as e:
+            print(f"YouTube upload error: {e}")
+            raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")

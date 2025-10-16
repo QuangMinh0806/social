@@ -8,7 +8,7 @@ const ConnectWithYoutube = ({ userId, pageId, onTokenUpdate }) => {
     const [error, setError] = useState('')
     const [accessToken, setAccessToken] = useState('')
     const [currentPage, setCurrentPage] = useState(null)
-    const [youtubePlatformId, setYoutubePlatformId] = useState(3)
+    const [youtubePlatformId, setYoutubePlatformId] = useState()
 
     const API_BASE_URL = 'http://localhost:8000'
 
@@ -22,7 +22,7 @@ const ConnectWithYoutube = ({ userId, pageId, onTokenUpdate }) => {
                     p.name?.toLowerCase().includes('youtube') ||
                     p.platform_name?.toLowerCase().includes('youtube')
                 )
-
+                console.log('YouTube platform from DB:', youtubePlatform)
                 if (youtubePlatform) {
                     setYoutubePlatformId(youtubePlatform.id)
                 } else {
@@ -30,7 +30,6 @@ const ConnectWithYoutube = ({ userId, pageId, onTokenUpdate }) => {
                 }
             } catch (error) {
                 console.error('Lỗi khi kiểm tra platform:', error)
-                console.warn('Using default YouTube platform ID: 2')
             }
         }
 

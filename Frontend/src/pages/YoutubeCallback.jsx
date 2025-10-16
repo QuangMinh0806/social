@@ -79,12 +79,6 @@ const YoutubeCallback = () => {
                     setStatus('success')
                     setMessage('Kết nối YouTube thành công!')
 
-                    console.log('✅ YouTube authentication successful!')
-                    console.log('📋 Token Info:', token_info)
-                    console.log('👤 User Info:', user_info)
-                    console.log('📺 YouTube Channels:', youtube_channels)
-                    console.log('📄 Page Data:', page_data)
-
                     // Nếu là popup, gửi dữ liệu về parent window
                     if (window.opener && !window.opener.closed) {
                         try {

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Plus, Search, Image as ImageIcon, Video, Music, Eye, Trash2, Download, Grid, List, Upload, Cloud, Film } from 'lucide-react';
+import { Plus, Search, Image as ImageIcon, Video, Music, Eye, Trash2, Download, Grid, List, Upload, Cloud, Film, Import } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { mediaService } from '../../services/media.service';
 import Card from '../../components/common/Card';
@@ -12,6 +12,7 @@ import Modal from '../../components/common/Modal';
 import Select from '../../components/common/Select';
 import Input from '../../components/common/Input';
 import UploadModal from '../../components/media/UploadModal';
+import ImportModal from '../../components/media/ImportModal';
 
 const MediaLibraryPage = () => {
   const [media, setMedia] = useState([]);
@@ -23,6 +24,7 @@ const MediaLibraryPage = () => {
   const [selectedMedia, setSelectedMedia] = useState(null);
   const [showPreview, setShowPreview] = useState(false);
   const [showUpload, setShowUpload] = useState(false);
+  const [showImport, setShowImport] = useState(false);
   const [viewMode, setViewMode] = useState('grid');
   const itemsPerPage = 12;
 
@@ -45,7 +47,7 @@ const MediaLibraryPage = () => {
 
   const handleDelete = async (id) => {
     if (!window.confirm('Bạn có chắc muốn xóa file này?')) return;
-    
+
     try {
       await mediaService.delete(id);
       toast.success('Xóa file thành công');
@@ -86,7 +88,7 @@ const MediaLibraryPage = () => {
     const videoCount = media.filter(m => m.file_type === 'video').length;
     const audioCount = media.filter(m => m.file_type === 'audio').length;
     const totalSize = media.reduce((sum, m) => sum + (m.file_size || 0), 0);
-    
+
     return {
       imageCount,
       videoCount,
@@ -102,7 +104,7 @@ const MediaLibraryPage = () => {
       const matchSearch = searchTerm === '' ||
         item.file_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (item.tags && JSON.stringify(item.tags).toLowerCase().includes(searchTerm.toLowerCase()));
-      
+
       return matchType && matchSearch;
     });
   }, [media, typeFilter, searchTerm]);
@@ -125,7 +127,7 @@ const MediaLibraryPage = () => {
         <h2 className="text-xl font-semibold mb-4">Thư viện Media</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {/* Images */}
-          <div 
+          <div
             className={`bg-white rounded-lg p-4 shadow-sm text-center hover:shadow-md transition-shadow cursor-pointer ${typeFilter === 'image' ? 'ring-2 ring-blue-500' : ''}`}
             onClick={() => setTypeFilter(typeFilter === 'image' ? 'all' : 'image')}
           >
@@ -143,7 +145,7 @@ const MediaLibraryPage = () => {
           </div>
 
           {/* Videos */}
-          <div 
+          <div
             className={`bg-white rounded-lg p-4 shadow-sm text-center hover:shadow-md transition-shadow cursor-pointer ${typeFilter === 'video' ? 'ring-2 ring-purple-500' : ''}`}
             onClick={() => setTypeFilter(typeFilter === 'video' ? 'all' : 'video')}
           >
@@ -161,7 +163,7 @@ const MediaLibraryPage = () => {
           </div>
 
           {/* Audio */}
-          <div 
+          <div
             className={`bg-white rounded-lg p-4 shadow-sm text-center hover:shadow-md transition-shadow cursor-pointer ${typeFilter === 'audio' ? 'ring-2 ring-green-500' : ''}`}
             onClick={() => setTypeFilter(typeFilter === 'audio' ? 'all' : 'audio')}
           >
@@ -200,6 +202,13 @@ const MediaLibraryPage = () => {
         subtitle={`Tổng ${filteredMedia.length}/${media.length} file`}
         actions={
           <div className="flex gap-2">
+            <Button
+              variant="primary"
+              icon={<Import size={20} />}
+              onClick={() => setShowImport(true)}
+            >
+              Import Media
+            </Button>
             <Button
               variant="primary"
               icon={<Upload size={20} />}
@@ -273,7 +282,7 @@ const MediaLibraryPage = () => {
           <div className="text-center py-12">
             <ImageIcon className="mx-auto h-12 w-12 text-gray-400 mb-4" />
             <p className="text-gray-500 text-lg">
-              {searchTerm || typeFilter !== 'all' 
+              {searchTerm || typeFilter !== 'all'
                 ? 'Không tìm thấy file nào phù hợp'
                 : 'Chưa có file nào'
               }
@@ -288,7 +297,7 @@ const MediaLibraryPage = () => {
           </div>
         ) : (
           <>
-            <div className={viewMode === 'grid' 
+            <div className={viewMode === 'grid'
               ? 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4'
               : 'space-y-2'
             }>
@@ -309,11 +318,11 @@ const MediaLibraryPage = () => {
                       ) : (
                         getFileIcon(item.file_type)
                       )}
-                      
+
                       {/* Type Badge */}
                       <div className="absolute top-2 right-2">
-                        <Badge 
-                          variant={item.file_type === 'image' ? 'primary' : item.file_type === 'video' ? 'purple' : 'success'} 
+                        <Badge
+                          variant={item.file_type === 'image' ? 'primary' : item.file_type === 'video' ? 'purple' : 'success'}
                           size="sm"
                           className="uppercase"
                         >
@@ -327,7 +336,7 @@ const MediaLibraryPage = () => {
                           {Math.floor(item.duration / 60)}:{String(item.duration % 60).padStart(2, '0')}
                         </div>
                       )}
-                      
+
                       {/* Overlay on hover */}
                       <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
                         <div className="flex gap-2">
@@ -356,7 +365,7 @@ const MediaLibraryPage = () => {
                         </div>
                       </div>
                     </div>
-                    
+
                     <div className="p-3">
                       <p className="text-sm font-medium text-gray-900 truncate" title={item.file_name}>
                         {item.file_name}
@@ -393,7 +402,7 @@ const MediaLibraryPage = () => {
                         getFileIcon(item.file_type)
                       )}
                     </div>
-                    
+
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-gray-900 truncate">{item.file_name}</p>
                       <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
@@ -406,8 +415,8 @@ const MediaLibraryPage = () => {
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <Badge 
-                        variant={item.file_type === 'image' ? 'primary' : item.file_type === 'video' ? 'purple' : 'success'} 
+                      <Badge
+                        variant={item.file_type === 'image' ? 'primary' : item.file_type === 'video' ? 'purple' : 'success'}
                         size="sm"
                       >
                         {item.file_type}
@@ -481,7 +490,7 @@ const MediaLibraryPage = () => {
                 <div className="text-gray-500">Không thể xem trước file này</div>
               )}
             </div>
-            
+
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <span className="text-gray-600">Tên file:</span>
@@ -512,7 +521,7 @@ const MediaLibraryPage = () => {
                 <p className="font-medium">{selectedMedia.mime_type || 'N/A'}</p>
               </div>
             </div>
-            
+
             <div className="flex gap-2">
               <Button
                 variant="primary"
@@ -539,6 +548,13 @@ const MediaLibraryPage = () => {
         isOpen={showUpload}
         onClose={() => setShowUpload(false)}
         onUploadComplete={fetchMedia}
+      />
+
+      {/* Import Modal */}
+      <ImportModal
+        isOpen={showImport}
+        onClose={() => setShowImport(false)}
+        onImportComplete={fetchMedia}
       />
     </div>
   );

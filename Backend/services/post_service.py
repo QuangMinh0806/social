@@ -7,6 +7,7 @@ from models.model import Post, PostAnalytics, Page, User, Template, Platform
 from typing import List, Optional, Dict
 from datetime import datetime
 from services.facebook_page_service import post_to_facebook_page
+from services.youtube_service import YouTubeService
 
 
 class PostService:
@@ -136,19 +137,6 @@ class PostService:
         return posts_with_analytics
     
     async def create(self, data: dict) -> Dict:
-        """
-        Tạo post mới và tự động đăng lên platform nếu status = 'published'
-        
-        Args:
-            data: Dictionary chứa thông tin post
-                - content: str
-                - page_id: int
-                - user_id: int
-                - status: str ('draft', 'published', 'scheduled')
-                - media_files: List[bytes] (optional) - File data để upload lên FB
-                - media_type: str (optional, 'image' or 'video')
-                - scheduled_at: datetime (optional)
-        """
         # Extract media info trước khi tạo post
         media_files = data.pop('media_files', [])
         media_type = data.pop('media_type', 'image')
@@ -243,6 +231,73 @@ class PostService:
                     "status": "failed",
                     "error_message": "TikTok posting not implemented yet"
                 })
+            
+            elif platform_name.lower() == "youtube":
+                # Đăng lên YouTube
+                youtube_service = YouTubeService()
+                
+                # Kiểm tra có video file không
+                if not media_files or media_type != 'video':
+                    raise Exception("YouTube yêu cầu video để upload")
+                
+                # Kiểm tra có refresh_token không
+                if not page.refresh_token:
+                    raise Exception(f"Page {page.page_name} không có refresh token")
+                
+                try:
+                    # Lưu video file tạm thời để upload
+                    import tempfile
+                    import os
+                    
+                    # Tạo file tạm từ media_files[0] (video đầu tiên)
+                    video_data = media_files[0]
+                    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as temp_file:
+                        temp_file.write(video_data)
+                        temp_file_path = temp_file.name
+                    
+                    try:
+                        # Upload lên YouTube
+                        result = await youtube_service.upload_video_async(
+                            access_token=page.access_token,
+                            refresh_token=page.refresh_token,
+                            file_path=temp_file_path,
+                            title=post.title or post.content.split('\n')[0] or 'Untitled Video',
+                            description=post.content,
+                            tags=None,
+                            category_id=22,
+                            privacy_status="private"
+                        )
+                        
+                        if result and result.get("video_id"):
+                            # Upload thành công
+                            video_id = result.get("video_id")
+                            video_url = result.get("video_url") or f"https://www.youtube.com/watch?v={video_id}"
+                            
+                            await self.update(post.id, {
+                                "status": "published",
+                                "published_at": datetime.utcnow(),
+                                "platform_post_id": video_id,
+                                "platform_post_url": video_url,
+                                "error_message": None
+                            })
+                            
+                            print(f"✅ Post {post.id} đã đăng thành công lên YouTube: {video_url}")
+                        else:
+                            raise Exception("YouTube upload không trả về video ID")
+                            
+                    finally:
+                        # Xóa file tạm
+                        if os.path.exists(temp_file_path):
+                            os.unlink(temp_file_path)
+                            
+                except Exception as youtube_error:
+                    error_msg = str(youtube_error)
+                    await self.update(post.id, {
+                        "status": "failed",
+                        "error_message": f"YouTube error: {error_msg}",
+                        "retry_count": post.retry_count + 1
+                    })
+                    print(f"❌ Post {post.id} đăng lên YouTube thất bại: {error_msg}")
             
             else:
                 raise Exception(f"Unsupported platform: {platform_name}")

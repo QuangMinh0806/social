@@ -361,3 +361,11 @@ class PostAnalytics(Base, TimestampMixin):
 
     def __repr__(self):
         return f"<PostAnalytics(id={self.id}, post_id={self.post_id}, likes={self.likes_count})>"
+
+
+class LLM(Base):
+    __tablename__ = "llm" 
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(150), nullable=False)
+    key = Column(String(150), nullable=False)

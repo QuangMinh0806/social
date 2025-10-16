@@ -210,10 +210,10 @@ async def upload_media(
     
     if file_type == "image" or file_type == "gif":
         width, height = get_image_dimensions(str(file_path))
-        thumbnail_url = f"/uploads/{file_type}/{unique_filename}"
+        thumbnail_url = f"http://localhost:8000/uploads/{file_type}/{unique_filename}"
     
     # Tạo URL cho file
-    file_url = f"/uploads/{file_type}/{unique_filename}"
+    file_url = f"http://localhost:8000/uploads/{file_type}/{unique_filename}"
     
     # Xử lý tags - convert string to None nếu rỗng hoặc 'null'
     processed_tags = None
@@ -309,10 +309,10 @@ async def upload_multiple_media(
             
             if file_type == "image" or file_type == "gif":
                 width, height = get_image_dimensions(str(file_path))
-                thumbnail_url = f"/uploads/{file_type}/{unique_filename}"
+                thumbnail_url = f"http://localhost:8000/uploads/{file_type}/{unique_filename}"
             
             # Tạo URL cho file
-            file_url = f"/uploads/{file_type}/{unique_filename}"
+            file_url = f"http://localhost:8000/uploads/{file_type}/{unique_filename}"
             
             # Convert file_type string to MediaType enum
             try:

@@ -6,6 +6,7 @@ import { postService } from '../../services/post.service';
 import { pageService } from '../../services/page.service';
 import { platformService } from '../../services/platform.service';
 import { mediaService } from '../../services/media.service';
+import aiService from '../../services/ai.service';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
@@ -17,6 +18,8 @@ import Modal from '../../components/common/Modal';
 const PostCreatePage = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiTopic, setAiTopic] = useState('');
   const [pages, setPages] = useState([]);
   const [platforms, setPlatforms] = useState([]);
   const [selectedPlatforms, setSelectedPlatforms] = useState([]);
@@ -26,6 +29,8 @@ const PostCreatePage = () => {
   const [showMediaModal, setShowMediaModal] = useState(false);
   const [selectedImages, setSelectedImages] = useState([]);
   const [selectedVideo, setSelectedVideo] = useState(null);
+  const [selectedVideoUrl, setSelectedVideoUrl] = useState(''); // Video URL từ thư viện
+  const [videoLibrary, setVideoLibrary] = useState([]); // Danh sách video trong hệ thống
   const [imageFrameTemplate, setImageFrameTemplate] = useState('');
   const [videoFrameTemplate, setVideoFrameTemplate] = useState('');
   const [watermarkTemplate, setWatermarkTemplate] = useState('');
@@ -39,6 +44,7 @@ const PostCreatePage = () => {
   useEffect(() => {
     fetchPages();
     fetchPlatforms();
+    fetchVideoLibrary();
   }, []);
 
   const fetchPages = async () => {
@@ -56,6 +62,15 @@ const PostCreatePage = () => {
       setPlatforms(response.data || []);
     } catch (error) {
       console.error('Error fetching platforms:', error);
+    }
+  };
+
+  const fetchVideoLibrary = async () => {
+    try {
+      const response = await mediaService.getByType('video');
+      setVideoLibrary(response.data || []);
+    } catch (error) {
+      console.error('Error fetching video library:', error);
     }
   };
 
@@ -94,27 +109,121 @@ const PostCreatePage = () => {
     try {
       setLoading(true);
       
-      // Create post for each selected page
+      // Tạo bài viết cho từng page đã chọn
       const promises = selectedPages.map(pageId => {
-        const postData = {
-          user_id: 1, // TODO: Get from auth
-          page_id: pageId,
-          content: formData.content,
-          post_type: selectedVideo ? 'video' : selectedImages.length > 0 ? 'image' : 'text',
-          status: publishType === 'now' ? 'published' : 'scheduled',
-          scheduled_at: publishType === 'schedule' ? formData.scheduled_at : null,
-        };
-        return postService.create(postData);
+        // Tạo FormData để gửi file + data
+        const formDataToSend = new FormData();
+        
+        // Thêm các field bắt buộc
+        formDataToSend.append('user_id', 13); // TODO: Get from auth
+        formDataToSend.append('page_id', pageId);
+        formDataToSend.append('content', formData.content);
+        formDataToSend.append('status', publishType === 'now' ? 'published' : 'scheduled');
+        
+        // Xác định post_type và media_type
+        let postType = 'text';
+        let mediaType = 'image';
+        
+        if (selectedVideo) {
+          // Upload video file từ máy tính
+          postType = 'video';
+          mediaType = 'video';
+          formDataToSend.append('files', selectedVideo);
+        } else if (selectedVideoUrl) {
+          // Upload video từ URL (thư viện media)
+          postType = 'video';
+          mediaType = 'video';
+          // Gửi URL thay vì file
+          formDataToSend.append('video_url', selectedVideoUrl);
+        } else if (selectedImages.length > 0) {
+          postType = 'image';
+          mediaType = 'image';
+          // Thêm tất cả image files
+          selectedImages.forEach(image => {
+            formDataToSend.append('files', image);
+          });
+        }
+        
+        formDataToSend.append('post_type', postType);
+        formDataToSend.append('media_type', mediaType);
+        
+        // Thêm scheduled_at nếu có
+        if (publishType === 'schedule' && formData.scheduled_at) {
+          formDataToSend.append('scheduled_at', formData.scheduled_at);
+        }
+        
+        return postService.create(formDataToSend);
       });
 
-      await Promise.all(promises);
-      toast.success(`Đã tạo ${selectedPages.length} bài viết thành công`);
+      const results = await Promise.all(promises);
+      
+      toast.success(
+        <div>
+          <div className="font-bold">✅ Tạo bài viết thành công!</div>
+          <div className="text-sm">Đã tạo {selectedPages.length} bài đăng trên các nền tảng</div>
+        </div>,
+        { duration: 3000 }
+      );
+      
       navigate('/posts');
     } catch (error) {
       toast.error('Không thể tạo bài viết');
       console.error(error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGenerateContent = async () => {
+    if (!aiTopic.trim()) {
+      toast.error('Vui lòng nhập chủ đề');
+      return;
+    }
+
+    try {
+      setAiLoading(true);
+      const data = await aiService.generateContent(aiTopic);
+      console.log('AI Response:', data); // Debug log
+      
+      if (!data?.content) {
+        toast.error('AI không trả về nội dung. Vui lòng thử lại.');
+        return;
+      }
+      
+      setFormData({ ...formData, content: data.content });
+      setAiTopic(''); // Clear topic after success
+      toast.success('Đã tạo nội dung thành công!');
+    } catch (error) {
+      toast.error('Không thể tạo nội dung. Vui lòng thử lại.');
+      console.error('Error generating content:', error);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const handleGenerateHashtags = async () => {
+    if (!aiTopic.trim()) {
+      toast.error('Vui lòng nhập chủ đề');
+      return;
+    }
+
+    try {
+      setAiLoading(true);
+      const data = await aiService.generateHashtags(aiTopic);
+      console.log('AI Hashtags Response:', data); // Debug log
+      
+      if (!data?.hashtags) {
+        toast.error('AI không trả về hashtags. Vui lòng thử lại.');
+        return;
+      }
+      
+      setHashtags(data.hashtags);
+      toast.success('Đã tạo hashtags thành công!');
+    } catch (error) {
+      toast.error('Không thể tạo hashtags. Vui lòng thử lại.');
+      console.error('Error generating hashtags:', error);
+    } finally {
+      setAiLoading(false);
     }
   };
 
@@ -139,27 +248,51 @@ const PostCreatePage = () => {
           closeOnOverlay={false}
         >
           <div className="space-y-5">
-            {/* Content Section */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  Nội dung bài đăng
-                </label>
+            {/* AI Content Generator */}
+            <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-4 rounded-lg border border-purple-200">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                🤖 AI Trợ lý sáng tạo nội dung
+              </label>
+              <div className="flex gap-2">
+                <Input
+                  value={aiTopic}
+                  onChange={(e) => setAiTopic(e.target.value)}
+                  placeholder="Nhập chủ đề (VD: Quảng cáo sản phẩm cà phê hữu cơ)"
+                  className="flex-1"
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleGenerateContent();
+                    }
+                  }}
+                />
                 <Button
                   type="button"
                   variant="primary"
                   size="sm"
                   icon={<Sparkles size={16} />}
-                  onClick={() => setShowAIModal(true)}
+                  onClick={handleGenerateContent}
+                  disabled={aiLoading || !aiTopic.trim()}
+                  className="whitespace-nowrap"
                 >
-                  AI tạo nội dung
+                  {aiLoading ? 'Đang tạo...' : 'Tạo nội dung'}
                 </Button>
               </div>
+              <p className="text-xs text-gray-500 mt-2">
+                💡 AI sẽ tạo nội dung bài đăng chuyên nghiệp dựa trên chủ đề của bạn
+              </p>
+            </div>
+
+            {/* Content Section */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Nội dung bài đăng
+              </label>
               <Textarea
-                rows={4}
+                rows={6}
                 value={formData.content}
                 onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                placeholder="Nhập nội dung bài đăng..."
+                placeholder="Nhập nội dung bài đăng hoặc sử dụng AI để tạo..."
                 required
               />
             </div>
@@ -276,20 +409,57 @@ const PostCreatePage = () => {
                     className="hidden"
                     id="image-upload"
                     onChange={(e) => {
-                      // Handle image upload
                       const files = Array.from(e.target.files);
                       setSelectedImages(files);
                     }}
                   />
                   <label htmlFor="image-upload" className="cursor-pointer">
                     <ImageIcon className="mx-auto h-8 w-8 text-gray-400 mb-2" />
-                    <p className="text-sm text-gray-600">Choose Files</p>
+                    <p className="text-sm text-gray-600">Chọn hình ảnh</p>
+                    <p className="text-xs text-gray-500 mt-1">Hỗ trợ nhiều ảnh</p>
                   </label>
                 </div>
+                
+                {/* Image Preview */}
                 {selectedImages.length > 0 && (
-                  <p className="text-sm text-green-600 mt-2">
-                    {selectedImages.length} hình ảnh đã chọn
-                  </p>
+                  <div className="mt-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-sm text-green-600 font-medium">
+                        ✓ {selectedImages.length} hình ảnh đã chọn
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedImages([])}
+                        className="text-xs text-red-600 hover:text-red-700 flex items-center gap-1"
+                      >
+                        <X size={14} />
+                        Xóa tất cả
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 max-h-64 overflow-y-auto">
+                      {selectedImages.map((file, index) => (
+                        <div key={index} className="relative group">
+                          <img
+                            src={URL.createObjectURL(file)}
+                            alt={`Preview ${index + 1}`}
+                            className="w-full h-24 object-cover rounded-lg border border-gray-300"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedImages(selectedImages.filter((_, i) => i !== index));
+                            }}
+                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <X size={14} />
+                          </button>
+                          <div className="absolute bottom-1 left-1 bg-black bg-opacity-60 text-white text-xs px-2 py-1 rounded">
+                            {index + 1}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 )}
               </div>
 
@@ -297,17 +467,128 @@ const PostCreatePage = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Video
                 </label>
-                <Select
-                  value={selectedVideo || ''}
-                  onChange={(e) => setSelectedVideo(e.target.value)}
-                  placeholder=""
-                  options={[
-                    { value: '', label: 'Chọn video...' },
-                    // Add video options from media library
-                  ]}
-                />
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-500 cursor-pointer bg-gray-50">
+                  <input
+                    type="file"
+                    accept="video/*"
+                    className="hidden"
+                    id="video-upload"
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (file) { 
+                        setSelectedVideo(file);
+                        setSelectedVideoUrl(''); // Clear video URL
+                        setSelectedImages([]); // Clear images if video is selected
+                      }
+                    }}
+                  />
+                  <label htmlFor="video-upload" className="cursor-pointer">
+                    <Video className="mx-auto h-8 w-8 text-gray-400 mb-2" />
+                    <p className="text-sm text-gray-600">Chọn video từ máy tính</p>
+                    <p className="text-xs text-gray-500 mt-1">Hoặc chọn từ thư viện bên dưới</p>
+                  </label>
+                </div>
+                
+                {/* Select from Video Library */}
+                <div className="mt-3">
+                  <Select
+                    value={selectedVideoUrl}
+                    onChange={(e) => {
+                      setSelectedVideoUrl(e.target.value);
+                      if (e.target.value) {
+                        setSelectedVideo(null); // Clear uploaded file
+                        setSelectedImages([]); // Clear images
+                      }
+                    }}
+                    options={[
+                      { value: '', label: 'Hoặc chọn video từ thư viện...' },
+                      ...videoLibrary.map(video => ({
+                        value: video.file_url,
+                        label: `${video.file_name} (${(video.file_size / 1024 / 1024).toFixed(2)} MB)`
+                      }))
+                    ]}
+                  />
+                </div>
+                
+                {/* Video Preview - Uploaded File */}
+                {selectedVideo && (
+                  <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <Video className="h-4 w-4 text-green-600" />
+                        <span className="text-sm text-green-700">
+                          ✓ Video đã chọn: {selectedVideo.name}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        className="text-red-500 hover:text-red-700"
+                        onClick={() => setSelectedVideo(null)}
+                      >
+                        <X className="h-5 w-5" />
+                      </button>
+                    </div>
+                    
+                    {/* Video preview player */}
+                    <div className="mt-4">
+                      <video
+                        src={URL.createObjectURL(selectedVideo)}
+                        controls
+                        className="w-full max-h-64 rounded-lg"
+                      />
+                    </div>
+                  </div>
+                )}
+                
+                {/* Video Preview - From Library */}
+                {selectedVideoUrl && !selectedVideo && (
+                  <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <Video className="h-4 w-4 text-blue-600" />
+                        <span className="text-sm text-blue-700">
+                          ✓ Video từ thư viện
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        className="text-red-500 hover:text-red-700"
+                        onClick={() => setSelectedVideoUrl('')}
+                      >
+                        <X className="h-5 w-5" />
+                      </button>
+                    </div>
+                    
+                    {/* Video preview player */}
+                    <div className="mt-4">
+                      <video
+                        src={selectedVideoUrl}
+                        controls
+                        className="w-full max-h-64 rounded-lg"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
+
+            {/* Clear both button */}
+            {(selectedImages.length > 0 || selectedVideo || selectedVideoUrl) && (
+              <div className="flex justify-end mt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedImages([]);
+                    setSelectedVideo(null);
+                    setSelectedVideoUrl('');
+                  }}
+                  className="text-sm text-gray-600 hover:text-gray-800"
+                >
+                  <X className="inline h-4 w-4 mr-1" />
+                  Xóa tất cả media
+                </button>
+              </div>
+            )}
 
             {/* Frame Templates */}
             <div>
@@ -422,23 +703,42 @@ const PostCreatePage = () => {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Hashtags
               </label>
-              <Input
-                value={hashtags}
-                onChange={(e) => setHashtags(e.target.value)}
-                placeholder="#hashtag1 #hashtag2"
-              />
-              <Button
-                type="button"
-                variant="primary"
-                size="sm"
-                className="mt-2"
-                onClick={() => {
-                  // Add hashtags to content
-                  setFormData({ ...formData, content: formData.content + '\n' + hashtags });
-                }}
-              >
-                # AI tạo hashtags
-              </Button>
+              <div className="flex gap-2">
+                <Input
+                  value={hashtags}
+                  onChange={(e) => setHashtags(e.target.value)}
+                  placeholder="#hashtag1 #hashtag2"
+                  className="flex-1"
+                />
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="sm"
+                  onClick={handleGenerateHashtags}
+                  disabled={aiLoading || !aiTopic.trim()}
+                  className="whitespace-nowrap"
+                >
+                  {aiLoading ? 'Đang tạo...' : '# AI tạo hashtags'}
+                </Button>
+              </div>
+              {hashtags && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="mt-2"
+                  onClick={() => {
+                    // Add hashtags to content
+                    setFormData({ ...formData, content: formData.content + '\n\n' + hashtags });
+                    toast.success('Đã thêm hashtags vào nội dung');
+                  }}
+                >
+                  ➕ Thêm hashtags vào nội dung
+                </Button>
+              )}
+              <p className="text-xs text-gray-500 mt-1">
+                💡 Sử dụng chủ đề bên trên để AI tạo hashtags phù hợp
+              </p>
             </div>
 
             {/* Action Buttons */}

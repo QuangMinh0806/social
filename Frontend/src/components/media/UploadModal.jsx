@@ -112,6 +112,9 @@ const UploadModal = ({ isOpen, onClose, onUploadComplete }) => {
 
     setUploading(true);
 
+    let successCount = 0;
+    let errorCount = 0;
+
     try {
       // Upload từng file một
       for (const fileObj of pendingFiles) {
@@ -135,6 +138,7 @@ const UploadModal = ({ isOpen, onClose, onUploadComplete }) => {
           );
 
           setUploadProgress(prev => ({ ...prev, [fileObj.id]: 100 }));
+          successCount++;
 
         } catch (error) {
           console.error('Upload error:', error);
@@ -145,15 +149,14 @@ const UploadModal = ({ isOpen, onClose, onUploadComplete }) => {
                 : f
             )
           );
+          errorCount++;
         }
       }
 
-      // Kiểm tra kết quả
-      const successCount = files.filter(f => f.status === 'success').length;
-      const errorCount = files.filter(f => f.status === 'error').length;
-
+      // Hiển thị kết quả
       if (successCount > 0) {
         toast.success(`Upload thành công ${successCount} file`);
+        // Gọi callback để reload danh sách
         if (onUploadComplete) {
           onUploadComplete();
         }
@@ -164,7 +167,7 @@ const UploadModal = ({ isOpen, onClose, onUploadComplete }) => {
       }
 
       // Đóng modal nếu tất cả thành công
-      if (errorCount === 0) {
+      if (errorCount === 0 && successCount > 0) {
         setTimeout(() => {
           handleClose();
         }, 1000);

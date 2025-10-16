@@ -6,6 +6,7 @@ import { postService } from '../../services/post.service';
 import { pageService } from '../../services/page.service';
 import { platformService } from '../../services/platform.service';
 import { mediaService } from '../../services/media.service';
+import { youtubeService } from '../../services/youtube.service';
 import aiService from '../../services/ai.service';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
@@ -75,8 +76,8 @@ const PostCreatePage = () => {
   };
 
   const handlePlatformToggle = (platformId) => {
-    setSelectedPlatforms(prev => 
-      prev.includes(platformId) 
+    setSelectedPlatforms(prev =>
+      prev.includes(platformId)
         ? prev.filter(id => id !== platformId)
         : [...prev, platformId]
     );
@@ -95,7 +96,7 @@ const PostCreatePage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (selectedPages.length === 0) {
       toast.error('Vui lòng chọn ít nhất một trang để đăng');
       return;
@@ -106,57 +107,37 @@ const PostCreatePage = () => {
       return;
     }
 
+    // Kiểm tra nếu có YouTube page được chọn thì phải có video
+    const hasYouTubePages = selectedPages.some(pageId => {
+      const page = pages.find(p => p.id === pageId);
+      return page?.platform?.name?.toLowerCase() === 'youtube';
+    });
+
+    if (hasYouTubePages && !selectedVideo && !selectedVideoUrl) {
+      toast.error('YouTube yêu cầu video để upload. Vui lòng chọn video từ máy tính hoặc thư viện.');
+      return;
+    }
+
     try {
       setLoading(true);
-      
+
       // Tạo bài viết cho từng page đã chọn
-      const promises = selectedPages.map(pageId => {
-        // Tạo FormData để gửi file + data
-        const formDataToSend = new FormData();
-        
-        // Thêm các field bắt buộc
-        formDataToSend.append('user_id', 13); // TODO: Get from auth
-        formDataToSend.append('page_id', pageId);
-        formDataToSend.append('content', formData.content);
-        formDataToSend.append('status', publishType === 'now' ? 'published' : 'scheduled');
-        
-        // Xác định post_type và media_type
-        let postType = 'text';
-        let mediaType = 'image';
-        
-        if (selectedVideo) {
-          // Upload video file từ máy tính
-          postType = 'video';
-          mediaType = 'video';
-          formDataToSend.append('files', selectedVideo);
-        } else if (selectedVideoUrl) {
-          // Upload video từ URL (thư viện media)
-          postType = 'video';
-          mediaType = 'video';
-          // Gửi URL thay vì file
-          formDataToSend.append('video_url', selectedVideoUrl);
-        } else if (selectedImages.length > 0) {
-          postType = 'image';
-          mediaType = 'image';
-          // Thêm tất cả image files
-          selectedImages.forEach(image => {
-            formDataToSend.append('files', image);
-          });
+      const promises = selectedPages.map(async (pageId) => {
+        // Lấy thông tin page để biết platform
+        const page = pages.find(p => p.id === pageId);
+        const platformName = page?.platform?.name?.toLowerCase();
+
+        // Xử lý YouTube riêng biệt
+        if (platformName === 'youtube') {
+          return await handleYouTubeUpload(page);
         }
-        
-        formDataToSend.append('post_type', postType);
-        formDataToSend.append('media_type', mediaType);
-        
-        // Thêm scheduled_at nếu có
-        if (publishType === 'schedule' && formData.scheduled_at) {
-          formDataToSend.append('scheduled_at', formData.scheduled_at);
-        }
-        
-        return postService.create(formDataToSend);
+
+        // Xử lý các platform khác (Facebook, v.v...)
+        return await handleRegularUpload(pageId);
       });
 
       const results = await Promise.all(promises);
-      
+
       toast.success(
         <div>
           <div className="font-bold">✅ Tạo bài viết thành công!</div>
@@ -164,7 +145,7 @@ const PostCreatePage = () => {
         </div>,
         { duration: 3000 }
       );
-      
+
       navigate('/posts');
     } catch (error) {
       toast.error('Không thể tạo bài viết');
@@ -172,6 +153,103 @@ const PostCreatePage = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Xử lý upload lên YouTube
+  const handleYouTubeUpload = async (page) => {
+    console.log('=== YouTube Upload Debug ===');
+    console.log('Page object:', page);
+    console.log('Page ID:', page.id);
+    console.log('Page name:', page.page_name);
+    console.log('Platform:', page.platform);
+
+    try {
+      // Kiểm tra phải có video
+      if (!selectedVideo && !selectedVideoUrl) {
+        throw new Error('YouTube yêu cầu video để upload');
+      }
+
+      // Tạo FormData giống handleRegularUpload
+      const formDataToSend = new FormData();
+
+      // Thêm các field bắt buộc
+      formDataToSend.append('user_id', '1'); // TODO: Get from auth
+      formDataToSend.append('page_id', page.id);
+      formDataToSend.append('content', formData.content);
+      formDataToSend.append('status', publishType === 'now' ? 'published' : 'scheduled');
+      formDataToSend.append('post_type', 'video');
+      formDataToSend.append('media_type', 'video');
+
+      // Thêm video
+      if (selectedVideo) {
+        // Video file từ máy tính
+        formDataToSend.append('files', selectedVideo);
+      } else if (selectedVideoUrl) {
+        // Video từ URL (thư viện media)
+        formDataToSend.append('video_url', selectedVideoUrl);
+      }
+
+      // Thêm scheduled_at nếu có
+      if (publishType === 'schedule' && formData.scheduled_at) {
+        formDataToSend.append('scheduled_at', formData.scheduled_at);
+      }
+
+      console.log('=== Sending YouTube Post to Backend ===');
+      console.log('Page ID:', page.id);
+      console.log('Platform:', page.platform?.name);
+
+      // Gọi postService.create - backend sẽ tự động upload lên YouTube
+      return await postService.create(formDataToSend);
+    } catch (error) {
+      console.error('YouTube upload error:', error);
+      throw error;
+    }
+  };
+
+  // Xử lý upload cho các platform khác
+  const handleRegularUpload = async (pageId) => {
+    // Tạo FormData để gửi file + data
+    const formDataToSend = new FormData();
+
+    // Thêm các field bắt buộc
+    formDataToSend.append('user_id', 1); // TODO: Get from auth
+    formDataToSend.append('page_id', pageId);
+    formDataToSend.append('content', formData.content);
+    formDataToSend.append('status', publishType === 'now' ? 'published' : 'scheduled');
+
+    // Xác định post_type và media_type
+    let postType = 'text';
+    let mediaType = 'image';
+
+    if (selectedVideo) {
+      // Upload video file từ máy tính
+      postType = 'video';
+      mediaType = 'video';
+      formDataToSend.append('files', selectedVideo);
+    } else if (selectedVideoUrl) {
+      // Upload video từ URL (thư viện media)
+      postType = 'video';
+      mediaType = 'video';
+      // Gửi URL thay vì file
+      formDataToSend.append('video_url', selectedVideoUrl);
+    } else if (selectedImages.length > 0) {
+      postType = 'image';
+      mediaType = 'image';
+      // Thêm tất cả image files
+      selectedImages.forEach(image => {
+        formDataToSend.append('files', image);
+      });
+    }
+
+    formDataToSend.append('post_type', postType);
+    formDataToSend.append('media_type', mediaType);
+
+    // Thêm scheduled_at nếu có
+    if (publishType === 'schedule' && formData.scheduled_at) {
+      formDataToSend.append('scheduled_at', formData.scheduled_at);
+    }
+
+    return postService.create(formDataToSend);
   };
 
   const handleGenerateContent = async () => {
@@ -184,12 +262,12 @@ const PostCreatePage = () => {
       setAiLoading(true);
       const data = await aiService.generateContent(aiTopic);
       console.log('AI Response:', data); // Debug log
-      
+
       if (!data?.content) {
         toast.error('AI không trả về nội dung. Vui lòng thử lại.');
         return;
       }
-      
+
       setFormData({ ...formData, content: data.content });
       setAiTopic(''); // Clear topic after success
       toast.success('Đã tạo nội dung thành công!');
@@ -211,12 +289,12 @@ const PostCreatePage = () => {
       setAiLoading(true);
       const data = await aiService.generateHashtags(aiTopic);
       console.log('AI Hashtags Response:', data); // Debug log
-      
+
       if (!data?.hashtags) {
         toast.error('AI không trả về hashtags. Vui lòng thử lại.');
         return;
       }
-      
+
       setHashtags(data.hashtags);
       toast.success('Đã tạo hashtags thành công!');
     } catch (error) {
@@ -308,11 +386,10 @@ const PostCreatePage = () => {
                   {platforms.map(platform => (
                     <label
                       key={platform.id}
-                      className={`flex items-center p-3 border rounded-lg cursor-pointer transition-all ${
-                        selectedPlatforms.includes(platform.id)
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-300 hover:border-gray-400'
-                      }`}
+                      className={`flex items-center p-3 border rounded-lg cursor-pointer transition-all ${selectedPlatforms.includes(platform.id)
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-300 hover:border-gray-400'
+                        }`}
                     >
                       <input
                         type="checkbox"
@@ -355,11 +432,10 @@ const PostCreatePage = () => {
                         {getFilteredPages().map(page => (
                           <label
                             key={page.id}
-                            className={`flex items-center p-3 border rounded-lg cursor-pointer transition-all ${
-                              selectedPages.includes(page.id)
-                                ? 'border-green-500 bg-green-50'
-                                : 'border-gray-300 hover:border-gray-400'
-                            }`}
+                            className={`flex items-center p-3 border rounded-lg cursor-pointer transition-all ${selectedPages.includes(page.id)
+                              ? 'border-green-500 bg-green-50'
+                              : 'border-gray-300 hover:border-gray-400'
+                              }`}
                           >
                             <input
                               type="checkbox"
@@ -395,6 +471,28 @@ const PostCreatePage = () => {
               </div>
             </div>
 
+            {/* YouTube Warning */}
+            {selectedPages.some(pageId => {
+              const page = pages.find(p => p.id === pageId);
+              return page?.platform?.name?.toLowerCase() === 'youtube';
+            }) && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0">
+                      <Video className="h-5 w-5 text-red-400" />
+                    </div>
+                    <div className="ml-3">
+                      <h3 className="text-sm font-medium text-red-800">
+                        📺 Yêu cầu Video cho YouTube
+                      </h3>
+                      <p className="mt-1 text-sm text-red-700">
+                        YouTube yêu cầu video để upload. Vui lòng chọn video từ máy tính hoặc thư viện media bên dưới.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
             {/* Media Upload */}
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -419,7 +517,7 @@ const PostCreatePage = () => {
                     <p className="text-xs text-gray-500 mt-1">Hỗ trợ nhiều ảnh</p>
                   </label>
                 </div>
-                
+
                 {/* Image Preview */}
                 {selectedImages.length > 0 && (
                   <div className="mt-3">
@@ -475,7 +573,7 @@ const PostCreatePage = () => {
                     id="video-upload"
                     onChange={(e) => {
                       const file = e.target.files[0];
-                      if (file) { 
+                      if (file) {
                         setSelectedVideo(file);
                         setSelectedVideoUrl(''); // Clear video URL
                         setSelectedImages([]); // Clear images if video is selected
@@ -488,7 +586,7 @@ const PostCreatePage = () => {
                     <p className="text-xs text-gray-500 mt-1">Hoặc chọn từ thư viện bên dưới</p>
                   </label>
                 </div>
-                
+
                 {/* Select from Video Library */}
                 <div className="mt-3">
                   <Select
@@ -509,7 +607,7 @@ const PostCreatePage = () => {
                     ]}
                   />
                 </div>
-                
+
                 {/* Video Preview - Uploaded File */}
                 {selectedVideo && (
                   <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
@@ -528,7 +626,7 @@ const PostCreatePage = () => {
                         <X className="h-5 w-5" />
                       </button>
                     </div>
-                    
+
                     {/* Video preview player */}
                     <div className="mt-4">
                       <video
@@ -539,7 +637,7 @@ const PostCreatePage = () => {
                     </div>
                   </div>
                 )}
-                
+
                 {/* Video Preview - From Library */}
                 {selectedVideoUrl && !selectedVideo && (
                   <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
@@ -558,7 +656,7 @@ const PostCreatePage = () => {
                         <X className="h-5 w-5" />
                       </button>
                     </div>
-                    
+
                     {/* Video preview player */}
                     <div className="mt-4">
                       <video

@@ -159,7 +159,7 @@ def get_image_dimensions(file_path: str):
 @router.post("/upload")
 async def upload_media(
     file: UploadFile = File(...),
-    user_id: int = Form(13),  # Default user_id = 13
+    user_id: int = Form(1),  # Default user_id = 13
     tags: Optional[str] = Form(None),
     db: AsyncSession = Depends(get_db)
 ):
@@ -228,7 +228,7 @@ async def upload_media(
     
     # Tạo record trong database
     media_data = {
-        "user_id": 13,  # Fixed user_id
+        "user_id": 1,  # Fixed user_id
         "file_name": file.filename,
         "file_type": media_type_enum,  # Use enum instead of string
         "file_url": file_url,
@@ -249,7 +249,7 @@ async def upload_media(
 @router.post("/upload/multiple")
 async def upload_multiple_media(
     files: List[UploadFile] = File(...),
-    user_id: int = Form(13),  # Default user_id = 13
+    user_id: int = Form(1),  # Default user_id = 13
     tags: Optional[str] = Form(None),
     db: AsyncSession = Depends(get_db)
 ):
@@ -322,7 +322,7 @@ async def upload_multiple_media(
             
             # Tạo record trong database
             media_data = {
-                "user_id": 13,  # Fixed user_id
+                "user_id": 1,  # Fixed user_id
                 "file_name": file.filename,
                 "file_type": media_type_enum,  # Use enum instead of string
                 "file_url": file_url,

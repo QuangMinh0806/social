@@ -23,7 +23,7 @@ const AnalyticsPage = () => {
       setLoading(true);
       const response = await analyticsService.getDashboardStats();
       setDashboardData(response.data);
-      
+
       // Fetch top posts
       const topPostsResponse = await analyticsService.getTopPosts(10);
       setTopPosts(topPostsResponse.data);
@@ -62,34 +62,34 @@ const AnalyticsPage = () => {
   ];
 
   const stats = dashboardData ? [
-    { 
-      label: 'Tổng lượt xem', 
-      value: formatNumber(dashboardData.total_views), 
-      change: '+12.5%', 
+    {
+      label: 'Tổng lượt xem',
+      value: formatNumber(dashboardData.total_views),
+      change: '+12.5%',
       trend: 'up',
       icon: Eye,
       color: 'blue'
     },
-    { 
-      label: 'Lượt thích', 
-      value: formatNumber(dashboardData.total_likes), 
-      change: '+8.2%', 
+    {
+      label: 'Lượt thích',
+      value: formatNumber(dashboardData.total_likes),
+      change: '+8.2%',
       trend: 'up',
       icon: Heart,
       color: 'red'
     },
-    { 
-      label: 'Bình luận', 
-      value: formatNumber(dashboardData.total_comments), 
-      change: '-2.4%', 
+    {
+      label: 'Bình luận',
+      value: formatNumber(dashboardData.total_comments),
+      change: '-2.4%',
       trend: 'down',
       icon: MessageCircle,
       color: 'green'
     },
-    { 
-      label: 'Chia sẻ', 
-      value: formatNumber(dashboardData.total_shares), 
-      change: '+15.3%', 
+    {
+      label: 'Chia sẻ',
+      value: formatNumber(dashboardData.total_shares),
+      change: '+15.3%',
       trend: 'up',
       icon: Share2,
       color: 'purple'
@@ -120,16 +120,15 @@ const AnalyticsPage = () => {
         {stats.map((stat, index) => {
           const Icon = stat.icon;
           const TrendIcon = stat.trend === 'up' ? TrendingUp : TrendingDown;
-          
+
           return (
             <Card key={index}>
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <p className="text-sm text-gray-600">{stat.label}</p>
                   <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
-                  <div className={`flex items-center gap-1 mt-2 text-sm ${
-                    stat.trend === 'up' ? 'text-green-600' : 'text-red-600'
-                  }`}>
+                  <div className={`flex items-center gap-1 mt-2 text-sm ${stat.trend === 'up' ? 'text-green-600' : 'text-red-600'
+                    }`}>
                     <TrendIcon size={16} />
                     <span>{stat.change}</span>
                   </div>

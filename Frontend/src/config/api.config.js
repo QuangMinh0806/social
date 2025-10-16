@@ -109,4 +109,4 @@ export const HTTP_STATUS = {
     SERVER_ERROR: 500,
 };
 
-export const REQUEST_TIMEOUT = 30000; // 30 seconds
+export const REQUEST_TIMEOUT = 0; // No timeout - allow upload until complete

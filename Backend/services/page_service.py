@@ -54,22 +54,55 @@ class PageService:
         pages = result.scalars().all()
         return [self._to_dict(page) for page in pages]
     
+    async def get_by_platform_and_page_id(self, platform_id: int, page_id: str) -> Optional[Dict]:
+        """Get page by platform_id and page_id"""
+        query = (
+            select(Page)
+            .options(selectinload(Page.platform))
+            .where(Page.platform_id == platform_id, Page.page_id == page_id)
+        )
+        result = await self.db.execute(query)
+        page = result.scalar_one_or_none()
+        return self._to_dict(page) if page else None
+    
     async def create(self, data: dict) -> Dict:
         """Create a new page"""
-        # Convert string datetime to datetime object if needed
-        if 'token_expires_at' in data and isinstance(data['token_expires_at'], str):
-            from dateutil import parser
-            try:
-                data['token_expires_at'] = parser.parse(data['token_expires_at'])
-            except:
-                # If parsing fails, remove it
-                data.pop('token_expires_at', None)
+        print("Creating page with data:", data)
         
-        page = Page(**data)
-        self.db.add(page)
-        await self.db.commit()
-        await self.db.refresh(page)
-        return self._to_dict(page)
+        try:
+            # Check if page already exists
+            if 'platform_id' in data and 'page_id' in data:
+                existing_page = await self.get_by_platform_and_page_id(data['platform_id'], data['page_id'])
+                if existing_page:
+                    print(f"Page already exists with platform_id={data['platform_id']}, page_id={data['page_id']}")
+                    # Update existing page instead of creating new one
+                    return await self.update_tokens(existing_page['id'], data)
+            
+            # Convert string datetime to datetime object if needed
+            if 'token_expires_at' in data and isinstance(data['token_expires_at'], str):
+                from dateutil import parser
+                try:
+                    data['token_expires_at'] = parser.parse(data['token_expires_at'])
+                except:
+                    # If parsing fails, remove it
+                    data.pop('token_expires_at', None)
+            
+            # Ensure refresh_token is handled properly
+            if 'refresh_token' not in data:
+                data['refresh_token'] = None
+            
+            print("Creating new page with processed data:", data)
+            page = Page(**data)
+            self.db.add(page)
+            await self.db.commit()
+            await self.db.refresh(page)
+            print("Page created successfully with id:", page.id)
+            return self._to_dict(page)
+            
+        except Exception as e:
+            print(f"Error creating page: {str(e)}")
+            await self.db.rollback()
+            raise e
     
     async def update(self, page_id: int, data: dict) -> Optional[Dict]:
         """Update page information"""
@@ -84,12 +117,24 @@ class PageService:
         page = result.scalar_one_or_none()
         return self._to_dict(page) if page else None
     
-    async def update_token(self, page_id: int, access_token: str, expires_at: datetime) -> Optional[Dict]:
-        """Update page access token and expiration"""
+    async def update_token(self, page_id: int, access_token: str, expires_at: datetime, refresh_token: str = None) -> Optional[Dict]:
+        """Update page access token, refresh token and expiration"""
         data = {
             "access_token": access_token,
             "token_expires_at": expires_at
         }
+        if refresh_token is not None:
+            data["refresh_token"] = refresh_token
+        return await self.update(page_id, data)
+    
+    async def update_tokens(self, page_id: int, access_token: str, refresh_token: str, expires_at: datetime = None) -> Optional[Dict]:
+        """Update both access token and refresh token"""
+        data = {
+            "access_token": access_token,
+            "refresh_token": refresh_token
+        }
+        if expires_at:
+            data["token_expires_at"] = expires_at
         return await self.update(page_id, data)
     
     async def sync_follower_count(self, page_id: int, follower_count: int) -> Optional[Dict]:
@@ -131,6 +176,7 @@ class PageService:
             "page_url": page.page_url,
             "avatar_url": page.avatar_url,
             "access_token": page.access_token,
+            "refresh_token": getattr(page, 'refresh_token', None),  # Thêm refresh_token
             "token_expires_at": page.token_expires_at.isoformat() if page.token_expires_at else None,
             "status": page.status.value if hasattr(page.status, 'value') else page.status,
             "follower_count": page.follower_count,

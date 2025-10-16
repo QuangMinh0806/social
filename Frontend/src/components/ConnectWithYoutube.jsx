@@ -118,16 +118,11 @@ const ConnectWithYoutube = ({ userId, pageId, onTokenUpdate }) => {
                             page_data
                         } = event.data.data
 
-                        console.log('🎉 YouTube Auth Success!')
-                        console.log('📋 Token Info:', token_info)
-                        console.log('👤 User Info:', user_info)
-                        console.log('📺 YouTube Channels:', youtube_channels)
-                        console.log('📄 Page Data:', page_data)
-
                         try {
                             // Bổ sung thông tin cần thiết cho page_data
                             const completePageData = {
                                 ...page_data,
+                                refresh_token: token_info.refresh_token,
                                 platform_id: youtubePlatformId,
                                 created_by: userId || 1 // Fallback user ID
                             }

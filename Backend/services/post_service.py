@@ -10,6 +10,7 @@ from services.facebook_page_service import post_to_facebook_page
 from services.instagram_service import post_to_instagram
 from services.tiktok_service import post_to_tiktok
 from services.threads_service import post_to_threads
+from services.youtube_service import YouTubeService
 
 
 class PostService:

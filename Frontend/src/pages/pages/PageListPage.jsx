@@ -92,7 +92,7 @@ const PageListPage = () => {
                 toast.success('Cập nhật trang thành công');
             } else {
                 // For create, we need created_by field
-                apiData.created_by = 13; // TODO: Get from auth context
+                apiData.created_by = 1; // TODO: Get from auth context
                 await pageService.create(apiData);
                 toast.success('Thêm trang thành công');
             }

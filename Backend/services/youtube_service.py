@@ -115,7 +115,9 @@ class YouTubeService:
 
     def prepare_page_data(self, token_info, user_info, youtube_channels, platform_id=3, created_by=1):
         """Chuẩn bị dữ liệu để tạo page với refresh token"""
+        """Chuẩn bị dữ liệu để tạo page với refresh token"""
         access_token = token_info.get("access_token")
+        refresh_token = token_info.get("refresh_token")
         refresh_token = token_info.get("refresh_token")
         expires_in = token_info.get("expires_in", 3600)
         
@@ -138,14 +140,29 @@ class YouTubeService:
             "avatar_url": channel_thumbnail,
             "access_token": access_token,
             "refresh_token": refresh_token,  # Thêm refresh token
+            "refresh_token": refresh_token,  # Thêm refresh token
             "token_expires_at": token_expires_at.isoformat() if token_expires_at else None,
             "status": "connected",
+            "follower_count": subscriber_count,
             "follower_count": subscriber_count,
         }
 
     def get_channel_profile(self, access_token, refresh_token=None):
         """Lấy thông tin profile YouTube của user"""
         try:
+            # Tạo credentials với đầy đủ thông tin nếu có refresh_token
+            if refresh_token:
+                credentials = Credentials(
+                    token=access_token,
+                    refresh_token=refresh_token,
+                    token_uri=self.token_url,
+                    client_id=self.client_id,
+                    client_secret=self.client_secret,
+                    scopes=self.scopes
+                )
+            else:
+                credentials = Credentials(token=access_token)
+                
             # Tạo credentials với đầy đủ thông tin nếu có refresh_token
             if refresh_token:
                 credentials = Credentials(
@@ -209,6 +226,19 @@ class YouTubeService:
             else:
                 credentials = Credentials(token=access_token)
                 
+            # Tạo credentials với đầy đủ thông tin nếu có refresh_token
+            if refresh_token:
+                credentials = Credentials(
+                    token=access_token,
+                    refresh_token=refresh_token,
+                    token_uri=self.token_url,
+                    client_id=self.client_id,
+                    client_secret=self.client_secret,
+                    scopes=self.scopes
+                )
+            else:
+                credentials = Credentials(token=access_token)
+                
             youtube = googleapiclient.discovery.build("youtube", "v3", credentials=credentials)
             
             # Lấy uploads playlist ID
@@ -257,6 +287,7 @@ class YouTubeService:
         - tags: List of tags (max 15 tags, 500 chars total)
         - category_id: YouTube category ID (default: 22 - People & Blogs)
         - privacy_status: private/unlisted/public
+        - refresh_token: YouTube refresh token (optional but recommended)
         - refresh_token: YouTube refresh token (optional but recommended)
         """
         try:

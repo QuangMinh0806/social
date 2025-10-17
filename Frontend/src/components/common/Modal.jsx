@@ -2,14 +2,14 @@ import { X } from 'lucide-react';
 import { useEffect } from 'react';
 import Button from './Button';
 
-const Modal = ({ 
-  isOpen, 
-  onClose, 
-  title, 
-  children, 
+const Modal = ({
+  isOpen,
+  onClose,
+  title,
+  children,
   footer,
   size = 'md',
-  closeOnOverlay = true 
+  closeOnOverlay = true
 }) => {
   useEffect(() => {
     if (isOpen) {
@@ -25,10 +25,10 @@ const Modal = ({
   if (!isOpen) return null;
 
   const sizes = {
-    sm: 'max-w-md',
-    md: 'max-w-2xl',
-    lg: 'max-w-4xl',
-    xl: 'max-w-6xl',
+    sm: 'max-w-sm',
+    md: 'max-w-lg',
+    lg: 'max-w-2xl',
+    xl: 'max-w-4xl',
     full: 'max-w-full mx-4',
   };
 
@@ -39,7 +39,7 @@ const Modal = ({
   };
 
   return (
-    <div 
+    <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50"
       onClick={handleOverlayClick}
     >
@@ -53,11 +53,11 @@ const Modal = ({
             <X size={24} />
           </button>
         </div>
-        
+
         <div className="flex-1 overflow-y-auto p-6">
           {children}
         </div>
-        
+
         {footer && (
           <div className="flex items-center justify-end gap-3 p-6 border-t bg-gray-50">
             {footer}

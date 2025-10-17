@@ -8,6 +8,7 @@ import { platformService } from '../../services/platform.service';
 import { mediaService } from '../../services/media.service';
 import { youtubeService } from '../../services/youtube.service';
 import aiService from '../../services/ai.service';
+import { useAuthStore } from '../../stores/authStore';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
@@ -18,6 +19,7 @@ import Modal from '../../components/common/Modal';
 
 const PostCreatePage = () => {
   const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiTopic, setAiTopic] = useState('');
@@ -45,10 +47,17 @@ const PostCreatePage = () => {
   });
 
   useEffect(() => {
+    // Check if user is authenticated
+    if (!isAuthenticated || !user) {
+      toast.error('Bạn cần đăng nhập để tạo bài viết');
+      navigate('/login');
+      return;
+    }
+
     fetchPages();
     fetchPlatforms();
     fetchVideoLibrary();
-  }, []);
+  }, [isAuthenticated, user, navigate]);
 
   const fetchPages = async () => {
     try {
@@ -135,7 +144,7 @@ const PostCreatePage = () => {
         const formDataToSend = new FormData();
 
         // Thêm các field bắt buộc
-        formDataToSend.append('user_id', 1); // TODO: Get from auth
+        formDataToSend.append('user_id', user.id);
         formDataToSend.append('page_id', pageId);
         formDataToSend.append('content', formData.content);
         formDataToSend.append('status', publishType === 'now' ? 'published' : 'scheduled');
@@ -298,6 +307,18 @@ const PostCreatePage = () => {
     if (selectedPlatforms.length === 0) return pages;
     return pages.filter(page => selectedPlatforms.includes(page.platform_id));
   };
+
+  // Show loading if user is not loaded yet
+  if (!user && isAuthenticated) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Đang tải thông tin người dùng...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>

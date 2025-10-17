@@ -4,6 +4,7 @@ import Modal from '../common/Modal';
 import Button from '../common/Button';
 import toast from 'react-hot-toast';
 import { mediaService } from '../../services/media.service';
+import { useAuthStore } from '../../stores/authStore';
 
 const UploadModal = ({ isOpen, onClose, onUploadComplete }) => {
   const [files, setFiles] = useState([]);
@@ -11,6 +12,7 @@ const UploadModal = ({ isOpen, onClose, onUploadComplete }) => {
   const [uploadProgress, setUploadProgress] = useState({});
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef(null);
+  const { user, isAuthenticated } = useAuthStore();
 
   const acceptedTypes = {
     image: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
@@ -104,7 +106,7 @@ const UploadModal = ({ isOpen, onClose, onUploadComplete }) => {
 
   const handleUpload = async () => {
     const pendingFiles = files.filter(f => f.status === 'pending');
-    
+
     if (pendingFiles.length === 0) {
       toast.error('Không có file nào để upload');
       return;
@@ -123,7 +125,7 @@ const UploadModal = ({ isOpen, onClose, onUploadComplete }) => {
 
           const formData = new FormData();
           formData.append('file', fileObj.file);
-          formData.append('user_id', '1'); // TODO: Lấy từ auth context
+          formData.append('user_id', user.id); // TODO: Lấy từ auth context
 
           // Upload file
           await mediaService.upload(formData);

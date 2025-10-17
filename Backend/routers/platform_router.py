@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from config.database import get_db
 from controllers.platform_controller import PlatformController
 
-router = APIRouter(prefix="/api/platforms", tags=["Platforms"])
+router = APIRouter(prefix="/platforms", tags=["Platforms"])
 
 
 @router.get("/")

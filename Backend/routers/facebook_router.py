@@ -3,6 +3,8 @@ from fastapi import APIRouter, Request, HTTPException, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from config.database import get_db
 from controllers import facebook_page_controller
+from core.auth import get_current_user
+from models.model import User
 import requests
 from fastapi.responses import RedirectResponse
 from dotenv import load_dotenv
@@ -26,12 +28,16 @@ FB_CLIENT_SECRET = "dda15803ebe7785219a19f1a2823d777"
 REDIRECT_URI = f"{URL}/facebook-pages/callback"
 
 @router.get("/callback")
-async def facebook_callback(code: Optional[str] = None, db: AsyncSession = Depends(get_db)):
+async def facebook_callback(
+    code: Optional[str] = None, 
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     if code is None:
         # Trường hợp Meta hoặc người khác vào link callback không có code
         return {"message": "Facebook callback endpoint - waiting for code"}
     
-    await facebook_page_controller.facebook_callback_controller(code, db)
+    await facebook_page_controller.facebook_callback_controller(code, db, current_user.id)
 
     return RedirectResponse(url=f"{URL_FE}/admin/facebook_page")
 

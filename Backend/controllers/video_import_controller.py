@@ -14,7 +14,7 @@ class VideoImportController:
         self.media_controller = MediaController(db)
     
     async def import_videos_from_urls(self, urls: List[str], platform: str, 
-                                    user_id: int = 1, auto_remove_watermark: bool = True,
+                                    user_id: int, auto_remove_watermark: bool = True,
                                     use_proxy: bool = False) -> Dict[str, Any]:
         """Import multiple videos from URLs"""
         
@@ -45,7 +45,7 @@ class VideoImportController:
             "errors": errors
         }
     
-    async def import_single_video(self, url: str, platform: str, user_id: int = 1,
+    async def import_single_video(self, url: str, platform: str, user_id: int,
                                 auto_remove_watermark: bool = True, 
                                 use_proxy: bool = False) -> Dict[str, Any]:
         """Import single video from URL"""

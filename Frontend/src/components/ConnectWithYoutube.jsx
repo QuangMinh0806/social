@@ -123,8 +123,8 @@ const ConnectWithYoutube = ({ userId, pageId, onTokenUpdate }) => {
                             const completePageData = {
                                 ...page_data,
                                 refresh_token: token_info.refresh_token,
-                                platform_id: youtubePlatformId,
-                                created_by: userId || 1 // Fallback user ID
+                                platform_id: youtubePlatformId
+                                // created_by: userId
                             }
 
                             console.log('💾 Saving complete page data:', completePageData)

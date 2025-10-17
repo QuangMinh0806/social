@@ -29,7 +29,7 @@ async def youtube_upload_controller(
         tags: Tags (comma-separated)
         category_id: YouTube category ID
         privacy_status: Trạng thái video (private/unlisted/public)
-        user_id: ID của user (optional, default=1)
+        user_id: ID của user (required)
         db: Database session
     """
     
@@ -49,7 +49,10 @@ async def youtube_upload_controller(
         
         # Tìm YouTube page của user
         if user_id is None:
-            user_id = 1  # Default user
+            raise HTTPException(
+                status_code=400,
+                detail="user_id is required"
+            )
             
         page_result = await db.execute(
             select(Page).filter(

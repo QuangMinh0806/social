@@ -32,6 +32,8 @@ const PostCreatePage = () => {
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [selectedVideoUrl, setSelectedVideoUrl] = useState(''); // Video URL từ thư viện
   const [videoLibrary, setVideoLibrary] = useState([]); // Danh sách video trong hệ thống
+  const [instagramMediaUrls, setInstagramMediaUrls] = useState(''); // URLs cho Instagram (mỗi dòng 1 URL)
+  const [threadsMediaUrls, setThreadsMediaUrls] = useState(''); // URLs cho Threads (mỗi dòng 1 URL)
   const [imageFrameTemplate, setImageFrameTemplate] = useState('');
   const [videoFrameTemplate, setVideoFrameTemplate] = useState('');
   const [watermarkTemplate, setWatermarkTemplate] = useState('');
@@ -107,149 +109,136 @@ const PostCreatePage = () => {
       return;
     }
 
-    // Kiểm tra nếu có YouTube page được chọn thì phải có video
-    const hasYouTubePages = selectedPages.some(pageId => {
-      const page = pages.find(p => p.id === pageId);
-      return page?.platform?.name?.toLowerCase() === 'youtube';
-    });
-
-    if (hasYouTubePages && !selectedVideo && !selectedVideoUrl) {
-      toast.error('YouTube yêu cầu video để upload. Vui lòng chọn video từ máy tính hoặc thư viện.');
-      return;
-    }
-
     try {
       setLoading(true);
 
+      // Hiển thị loading message với số lượng pages
+      const loadingToast = toast.loading(
+        <div>
+          <div className="font-bold">⏳ Đang tạo bài viết...</div>
+          <div className="text-sm">
+            Đang đăng lên {selectedPages.length} trang.
+            {selectedPages.length > 1 && ' Có thể mất vài phút...'}
+          </div>
+        </div>
+      );
+
       // Tạo bài viết cho từng page đã chọn
-      const promises = selectedPages.map(async (pageId) => {
+      const promises = selectedPages.map(pageId => {
         // Lấy thông tin page để biết platform
         const page = pages.find(p => p.id === pageId);
-        const platformName = page?.platform?.name?.toLowerCase();
+        const platformName = page?.platform?.name || '';
+        const isInstagram = platformName.toLowerCase() === 'instagram';
+        const isThreads = platformName.toLowerCase() === 'threads';
 
-        // Xử lý YouTube riêng biệt
-        if (platformName === 'youtube') {
-          return await handleYouTubeUpload(page);
+        // Tạo FormData để gửi file + data
+        const formDataToSend = new FormData();
+
+        // Thêm các field bắt buộc
+        formDataToSend.append('user_id', 13); // TODO: Get from auth
+        formDataToSend.append('page_id', pageId);
+        formDataToSend.append('content', formData.content);
+        formDataToSend.append('status', publishType === 'now' ? 'published' : 'scheduled');
+
+        // Xác định post_type và media_type
+        let postType = 'text';
+        let mediaType = 'image';
+
+        // Nếu là Instagram và có Instagram URLs
+        if (isInstagram && instagramMediaUrls.trim()) {
+          // Parse URLs (mỗi dòng 1 URL)
+          const urls = instagramMediaUrls.split('\n').filter(url => url.trim());
+          postType = 'image'; // Hoặc 'video' tùy vào URL
+          mediaType = 'image';
+
+          // Gửi URLs cho Instagram
+          urls.forEach(url => {
+            formDataToSend.append('media_urls', url.trim());
+          });
+        } else if (isThreads && threadsMediaUrls.trim()) {
+          // Parse URLs (mỗi dòng 1 URL) cho Threads
+          const urls = threadsMediaUrls.split('\n').filter(url => url.trim());
+          postType = 'image'; // Hoặc 'video' tùy vào URL
+          mediaType = 'image';
+
+          // Gửi URLs cho Threads
+          urls.forEach(url => {
+            formDataToSend.append('media_urls', url.trim());
+          });
+        } else if (selectedVideo) {
+          // Upload video file từ máy tính (Facebook, TikTok, YouTube)
+          postType = 'video';
+          mediaType = 'video';
+          formDataToSend.append('files', selectedVideo);
+        } else if (selectedVideoUrl) {
+          // Upload video từ URL (thư viện media)
+          postType = 'video';
+          mediaType = 'video';
+          formDataToSend.append('video_url', selectedVideoUrl);
+        } else if (selectedImages.length > 0) {
+          // Upload images từ máy tính (Facebook)
+          postType = 'image';
+          mediaType = 'image';
+          selectedImages.forEach(image => {
+            formDataToSend.append('files', image);
+          });
         }
 
-        // Xử lý các platform khác (Facebook, v.v...)
-        return await handleRegularUpload(pageId);
+        formDataToSend.append('post_type', postType);
+        formDataToSend.append('media_type', mediaType);
+
+        // Thêm scheduled_at nếu có
+        if (publishType === 'schedule' && formData.scheduled_at) {
+          formDataToSend.append('scheduled_at', formData.scheduled_at);
+        }
+
+        return postService.create(formDataToSend);
       });
 
       const results = await Promise.all(promises);
 
-      toast.success(
-        <div>
-          <div className="font-bold">✅ Tạo bài viết thành công!</div>
-          <div className="text-sm">Đã tạo {selectedPages.length} bài đăng trên các nền tảng</div>
-        </div>,
-        { duration: 3000 }
-      );
+      // Dismiss loading toast
+      toast.dismiss(loadingToast);
+
+      // Hiển thị kết quả chi tiết
+      const successCount = results.filter(r => r?.success !== false).length;
+      const failCount = results.length - successCount;
+
+      if (failCount === 0) {
+        toast.success(
+          <div>
+            <div className="font-bold">✅ Tạo bài viết thành công!</div>
+            <div className="text-sm">
+              Đã đăng {selectedPages.length} bài lên các nền tảng
+              {publishType === 'schedule' && ' (đã lên lịch)'}
+            </div>
+          </div>,
+          { duration: 4000 }
+        );
+      } else {
+        toast.success(
+          <div>
+            <div className="font-bold">⚠️ Hoàn thành với một số lỗi</div>
+            <div className="text-sm">
+              Thành công: {successCount} | Thất bại: {failCount}
+            </div>
+          </div>,
+          { duration: 5000 }
+        );
+      }
 
       navigate('/posts');
     } catch (error) {
-      toast.error('Không thể tạo bài viết');
+      toast.error(
+        <div>
+          <div className="font-bold">❌ Không thể tạo bài viết</div>
+          <div className="text-sm">{error.message || 'Vui lòng thử lại sau'}</div>
+        </div>
+      );
       console.error(error);
     } finally {
       setLoading(false);
     }
-  };
-
-  // Xử lý upload lên YouTube
-  const handleYouTubeUpload = async (page) => {
-    console.log('=== YouTube Upload Debug ===');
-    console.log('Page object:', page);
-    console.log('Page ID:', page.id);
-    console.log('Page name:', page.page_name);
-    console.log('Platform:', page.platform);
-
-    try {
-      // Kiểm tra phải có video
-      if (!selectedVideo && !selectedVideoUrl) {
-        throw new Error('YouTube yêu cầu video để upload');
-      }
-
-      // Tạo FormData giống handleRegularUpload
-      const formDataToSend = new FormData();
-
-      // Thêm các field bắt buộc
-      formDataToSend.append('user_id', '1'); // TODO: Get from auth
-      formDataToSend.append('page_id', page.id);
-      formDataToSend.append('content', formData.content);
-      formDataToSend.append('status', publishType === 'now' ? 'published' : 'scheduled');
-      formDataToSend.append('post_type', 'video');
-      formDataToSend.append('media_type', 'video');
-
-      // Thêm video
-      if (selectedVideo) {
-        // Video file từ máy tính
-        formDataToSend.append('files', selectedVideo);
-      } else if (selectedVideoUrl) {
-        // Video từ URL (thư viện media)
-        formDataToSend.append('video_url', selectedVideoUrl);
-      }
-
-      // Thêm scheduled_at nếu có
-      if (publishType === 'schedule' && formData.scheduled_at) {
-        formDataToSend.append('scheduled_at', formData.scheduled_at);
-      }
-
-      console.log('=== Sending YouTube Post to Backend ===');
-      console.log('Page ID:', page.id);
-      console.log('Platform:', page.platform?.name);
-
-      // Gọi postService.create - backend sẽ tự động upload lên YouTube
-      return await postService.create(formDataToSend);
-    } catch (error) {
-      console.error('YouTube upload error:', error);
-      throw error;
-    }
-  };
-
-  // Xử lý upload cho các platform khác
-  const handleRegularUpload = async (pageId) => {
-    // Tạo FormData để gửi file + data
-    const formDataToSend = new FormData();
-
-    // Thêm các field bắt buộc
-    formDataToSend.append('user_id', 1); // TODO: Get from auth
-    formDataToSend.append('page_id', pageId);
-    formDataToSend.append('content', formData.content);
-    formDataToSend.append('status', publishType === 'now' ? 'published' : 'scheduled');
-
-    // Xác định post_type và media_type
-    let postType = 'text';
-    let mediaType = 'image';
-
-    if (selectedVideo) {
-      // Upload video file từ máy tính
-      postType = 'video';
-      mediaType = 'video';
-      formDataToSend.append('files', selectedVideo);
-    } else if (selectedVideoUrl) {
-      // Upload video từ URL (thư viện media)
-      postType = 'video';
-      mediaType = 'video';
-      // Gửi URL thay vì file
-      formDataToSend.append('video_url', selectedVideoUrl);
-    } else if (selectedImages.length > 0) {
-      postType = 'image';
-      mediaType = 'image';
-      // Thêm tất cả image files
-      selectedImages.forEach(image => {
-        formDataToSend.append('files', image);
-      });
-    }
-
-    formDataToSend.append('post_type', postType);
-    formDataToSend.append('media_type', mediaType);
-
-    // Thêm scheduled_at nếu có
-    if (publishType === 'schedule' && formData.scheduled_at) {
-      formDataToSend.append('scheduled_at', formData.scheduled_at);
-    }
-
-    return postService.create(formDataToSend);
   };
 
   const handleGenerateContent = async () => {
@@ -471,28 +460,6 @@ const PostCreatePage = () => {
               </div>
             </div>
 
-            {/* YouTube Warning */}
-            {selectedPages.some(pageId => {
-              const page = pages.find(p => p.id === pageId);
-              return page?.platform?.name?.toLowerCase() === 'youtube';
-            }) && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0">
-                      <Video className="h-5 w-5 text-red-400" />
-                    </div>
-                    <div className="ml-3">
-                      <h3 className="text-sm font-medium text-red-800">
-                        📺 Yêu cầu Video cho YouTube
-                      </h3>
-                      <p className="mt-1 text-sm text-red-700">
-                        YouTube yêu cầu video để upload. Vui lòng chọn video từ máy tính hoặc thư viện media bên dưới.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
             {/* Media Upload */}
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -687,6 +654,57 @@ const PostCreatePage = () => {
                 </button>
               </div>
             )}
+
+            {/* Instagram Media URLs */}
+            {selectedPlatforms.some(id => {
+              const platform = platforms.find(p => p.id === id);
+              return platform?.name?.toLowerCase() === 'instagram';
+            }) && (
+                <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    📸 Instagram Media URLs
+                  </label>
+                  <Textarea
+                    rows={5}
+                    value={instagramMediaUrls}
+                    onChange={(e) => setInstagramMediaUrls(e.target.value)}
+                    placeholder="Nhập URL công khai của ảnh/video (HTTPS)&#10;Mỗi dòng 1 URL:&#10;&#10;https://example.com/image1.jpg&#10;https://example.com/image2.jpg&#10;https://example.com/video1.mp4"
+                    className="font-mono text-sm"
+                  />
+                  <div className="mt-2 text-xs text-gray-600 space-y-1">
+                    <p>⚠️ <strong>Lưu ý:</strong> Instagram không hỗ trợ upload file trực tiếp</p>
+                    <p>✅ Bạn cần upload ảnh/video lên dịch vụ khác (Imgur, Cloudinary, etc.) và paste URL vào đây</p>
+                    <p>🔗 URL phải là HTTPS và có thể truy cập công khai</p>
+                    <p>📝 Mỗi dòng 1 URL (hỗ trợ nhiều ảnh)</p>
+                  </div>
+                </div>
+              )}
+
+            {/* Threads Media URLs */}
+            {selectedPlatforms.some(id => {
+              const platform = platforms.find(p => p.id === id);
+              return platform?.name?.toLowerCase() === 'threads';
+            }) && (
+                <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    🧵 Threads Media URLs
+                  </label>
+                  <Textarea
+                    rows={5}
+                    value={threadsMediaUrls}
+                    onChange={(e) => setThreadsMediaUrls(e.target.value)}
+                    placeholder="Nhập URL công khai của ảnh/video (HTTPS)&#10;Mỗi dòng 1 URL:&#10;&#10;https://example.com/image1.jpg&#10;https://example.com/image2.jpg&#10;https://example.com/video1.mp4&#10;&#10;Hoặc để trống để đăng chỉ text"
+                    className="font-mono text-sm"
+                  />
+                  <div className="mt-2 text-xs text-gray-600 space-y-1">
+                    <p>⚠️ <strong>Lưu ý:</strong> Threads không hỗ trợ upload file trực tiếp</p>
+                    <p>✅ Bạn cần upload ảnh/video lên dịch vụ khác (Imgur, Cloudinary, etc.) và paste URL vào đây</p>
+                    <p>🔗 URL phải là HTTPS và có thể truy cập công khai</p>
+                    <p>📝 Mỗi dòng 1 URL (hỗ trợ nhiều ảnh)</p>
+                    <p>💬 Có thể để trống để đăng text-only</p>
+                  </div>
+                </div>
+              )}
 
             {/* Frame Templates */}
             <div>

@@ -115,7 +115,9 @@ class YouTubeService:
 
     def prepare_page_data(self, token_info, user_info, youtube_channels, platform_id=3, created_by=1):
         """Chuẩn bị dữ liệu để tạo page với refresh token"""
+        """Chuẩn bị dữ liệu để tạo page với refresh token"""
         access_token = token_info.get("access_token")
+        refresh_token = token_info.get("refresh_token")
         refresh_token = token_info.get("refresh_token")
         expires_in = token_info.get("expires_in", 3600)
         
@@ -138,14 +140,29 @@ class YouTubeService:
             "avatar_url": channel_thumbnail,
             "access_token": access_token,
             "refresh_token": refresh_token,  # Thêm refresh token
+            "refresh_token": refresh_token,  # Thêm refresh token
             "token_expires_at": token_expires_at.isoformat() if token_expires_at else None,
             "status": "connected",
+            "follower_count": subscriber_count,
             "follower_count": subscriber_count,
         }
 
     def get_channel_profile(self, access_token, refresh_token=None):
         """Lấy thông tin profile YouTube của user"""
         try:
+            # Tạo credentials với đầy đủ thông tin nếu có refresh_token
+            if refresh_token:
+                credentials = Credentials(
+                    token=access_token,
+                    refresh_token=refresh_token,
+                    token_uri=self.token_url,
+                    client_id=self.client_id,
+                    client_secret=self.client_secret,
+                    scopes=self.scopes
+                )
+            else:
+                credentials = Credentials(token=access_token)
+                
             # Tạo credentials với đầy đủ thông tin nếu có refresh_token
             if refresh_token:
                 credentials = Credentials(
@@ -209,6 +226,19 @@ class YouTubeService:
             else:
                 credentials = Credentials(token=access_token)
                 
+            # Tạo credentials với đầy đủ thông tin nếu có refresh_token
+            if refresh_token:
+                credentials = Credentials(
+                    token=access_token,
+                    refresh_token=refresh_token,
+                    token_uri=self.token_url,
+                    client_id=self.client_id,
+                    client_secret=self.client_secret,
+                    scopes=self.scopes
+                )
+            else:
+                credentials = Credentials(token=access_token)
+                
             youtube = googleapiclient.discovery.build("youtube", "v3", credentials=credentials)
             
             # Lấy uploads playlist ID
@@ -252,33 +282,72 @@ class YouTubeService:
         Parameters:
         - access_token: YouTube access token
         - file_path: Đường dẫn đến file video
-        - title: Video title
-        - description: Video description
-        - tags: List of tags
-        - category_id: YouTube category ID
+        - title: Video title (max 100 characters)
+        - description: Video description (max 5000 characters)
+        - tags: List of tags (max 15 tags, 500 chars total)
+        - category_id: YouTube category ID (default: 22 - People & Blogs)
         - privacy_status: private/unlisted/public
+        - refresh_token: YouTube refresh token (optional but recommended)
         - refresh_token: YouTube refresh token (optional but recommended)
         """
         try:
             import os
             from googleapiclient.http import MediaFileUpload
             
+            # Validate inputs
+            if not title or not title.strip():
+                raise ValueError("Title cannot be empty")
+            
+            if not description:
+                description = ""
+            
+            # Trim title and description to YouTube limits
+            title = str(title).strip()[:100]  # YouTube max: 100 chars
+            description = str(description).strip()[:5000]  # YouTube max: 5000 chars
+            
             # Kiểm tra file tồn tại
             if not os.path.exists(file_path):
                 raise Exception(f"File không tồn tại: {file_path}")
             
+            print(f"📹 Preparing to upload video:")
+            print(f"   File: {file_path}")
+            print(f"   Title: {title}")
+            print(f"   Description length: {len(description)} chars")
+            print(f"   Tags: {tags}")
+            
             # Đảm bảo credentials hợp lệ
-            valid_access_token = self.ensure_valid_credentials(access_token, refresh_token)
+            print("🔐 Validating credentials...")
+            try:
+                valid_access_token = self.ensure_valid_credentials(access_token, refresh_token)
+                print(f"✓ Credentials validated successfully")
+            except Exception as cred_error:
+                error_msg = str(cred_error)
+                print(f"❌ Credentials validation failed: {error_msg}")
+                raise Exception(f"Credentials validation failed: {error_msg}")
             
             # Tạo credentials đầy đủ
-            credentials = self.create_full_credentials(valid_access_token, refresh_token)
+            print("🔑 Creating credentials object...")
+            try:
+                credentials = self.create_full_credentials(valid_access_token, refresh_token)
+                print("✓ Credentials object created")
+            except Exception as cred_obj_error:
+                error_msg = str(cred_obj_error)
+                print(f"❌ Failed to create credentials object: {error_msg}")
+                raise Exception(f"Failed to create credentials object: {error_msg}")
             
             # Build YouTube service
-            youtube = googleapiclient.discovery.build(
-                "youtube", "v3", 
-                credentials=credentials,
-                cache_discovery=False
-            )
+            print("🔨 Building YouTube API service...")
+            try:
+                youtube = googleapiclient.discovery.build(
+                    "youtube", "v3", 
+                    credentials=credentials,
+                    cache_discovery=False
+                )
+                print("✓ YouTube service built successfully")
+            except Exception as build_error:
+                error_msg = str(build_error)
+                print(f"❌ Failed to build YouTube service: {error_msg}")
+                raise Exception(f"Failed to build YouTube service: {error_msg}")
             
             # Prepare video metadata
             video_metadata = {
@@ -294,8 +363,14 @@ class YouTubeService:
             }
             
             # Add tags if provided
-            if tags and len(tags) > 0:
-                video_metadata["snippet"]["tags"] = tags[:500]  # YouTube limit
+            # YouTube limits: max 500 characters total, recommend max 15 tags
+            if tags:
+                if isinstance(tags, list) and len(tags) > 0:
+                    # Filter valid tags and limit to first 15
+                    valid_tags = [str(tag).strip() for tag in tags if tag and str(tag).strip()]
+                    valid_tags = valid_tags[:15]  # YouTube recommends max 15 tags
+                    if valid_tags:
+                        video_metadata["snippet"]["tags"] = valid_tags
             
             # Create media upload object từ file path
             media = MediaFileUpload(
@@ -313,33 +388,56 @@ class YouTubeService:
             
             # Upload with progress (simplified version)
             response = None
+            print("⏳ Starting upload...")
+            
             while response is None:
                 try:
                     status, response = insert_request.next_chunk()
                     if status:
-                        print(f"Upload progress: {int(status.progress() * 100)}%")
-                except Exception as e:
-                    print(f"Upload chunk error: {e}")
-                    raise
+                        progress = int(status.progress() * 100)
+                        print(f"   Upload progress: {progress}%")
+                except Exception as chunk_error:
+                    error_msg = str(chunk_error)
+                    print(f"❌ Upload chunk error: {error_msg}")
+                    
+                    # Check for common errors
+                    if "quota" in error_msg.lower():
+                        raise Exception("YouTube API quota exceeded. Please try again tomorrow or request quota increase.")
+                    elif "uploadlimitexceeded" in error_msg.lower():
+                        raise Exception("YouTube upload limit exceeded. Please verify your YouTube channel at https://www.youtube.com/verify or wait 24 hours.")
+                    elif "unauthorized" in error_msg.lower() or "credentials" in error_msg.lower():
+                        raise Exception("Invalid credentials. Please reconnect your YouTube channel.")
+                    elif "forbidden" in error_msg.lower():
+                        raise Exception("Permission denied. Check OAuth scopes and channel permissions.")
+                    else:
+                        raise
             
             if response:
                 video_id = response.get("id")
                 video_url = f"https://www.youtube.com/watch?v={video_id}"
                 
+                print(f"✅ Video uploaded successfully - ID: {video_id}")
+                
                 return {
+                    "success": True,
                     "video_id": video_id,
                     "video_url": video_url,
                     "title": title,
                     "description": description,
                     "privacy_status": privacy_status,
-                    "upload_status": "completed"
+                    "upload_status": "completed",
+                    "message": "Video uploaded successfully to YouTube"
                 }
             else:
                 raise Exception("Upload failed - no response received")
                 
         except Exception as e:
-            print(f"YouTube upload error: {e}")
-            raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+            print(f"❌ YouTube upload error: {e}")
+            return {
+                "success": False,
+                "message": f"Upload failed: {str(e)}",
+                "error": str(e)
+            }
 
     def refresh_access_token(self, refresh_token):
         """
@@ -366,17 +464,12 @@ class YouTubeService:
             
             if response.status_code != 200:
                 error_msg = token_info.get('error_description', token_info.get('error', 'unknown_error'))
-                raise HTTPException(
-                    status_code=400, 
-                    detail=f"Token refresh failed: {error_msg}"
-                )
+                raise Exception(f"Token refresh failed: {error_msg}")
             
             return token_info
             
-        except HTTPException:
-            raise
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Token refresh error: {str(e)}")
+            raise Exception(f"Token refresh error: {str(e)}")
 
     def validate_access_token(self, access_token):
         """
@@ -423,7 +516,11 @@ class YouTubeService:
             }
             
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Token validation error: {str(e)}")
+            # Return invalid instead of raising exception
+            return {
+                "valid": False,
+                "error": str(e)
+            }
 
     def revoke_access_token(self, access_token):
         """
@@ -489,7 +586,12 @@ class YouTubeService:
             }
             
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Token expiry check error: {str(e)}")
+            return {
+                "valid": False,
+                "expired": True,
+                "error": str(e),
+                "message": f"Token expiry check error: {str(e)}"
+            }
 
     def auto_refresh_token_if_needed(self, access_token, refresh_token, threshold_minutes=5):
         """
@@ -539,7 +641,7 @@ class YouTubeService:
             }
             
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Auto refresh error: {str(e)}")
+            raise Exception(f"Auto refresh error: {str(e)}")
 
     def ensure_valid_credentials(self, access_token, refresh_token=None):
         """
@@ -555,27 +657,32 @@ class YouTubeService:
         try:
             if not refresh_token:
                 # Chỉ có access token, validate và return
+                print("⚠️  No refresh_token provided, validating access_token only...")
                 validation = self.validate_access_token(access_token)
                 if validation.get("valid"):
+                    print(f"✓ Access token is valid (expires in {validation.get('expires_in')}s)")
                     return access_token
                 else:
-                    raise HTTPException(
-                        status_code=401, 
-                        detail="Access token is invalid and no refresh token provided"
+                    raise Exception(
+                        "Access token is invalid and no refresh token provided. Please reconnect YouTube channel."
                     )
             
             # Có cả access và refresh token, thử auto refresh
+            print("✓ Checking if token needs refresh...")
             result = self.auto_refresh_token_if_needed(access_token, refresh_token, threshold_minutes=5)
             
             if result.get("refreshed"):
+                print(f"✓ Token refreshed successfully")
                 return result.get("new_access_token")
             else:
+                print(f"✓ Token is still valid")
                 return result.get("current_access_token", access_token)
                 
-        except HTTPException:
-            raise
+        except HTTPException as http_err:
+            # Convert HTTPException to regular Exception for consistency
+            raise Exception(str(http_err.detail))
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Credentials validation error: {str(e)}")
+            raise Exception(f"Credentials validation error: {str(e)}")
 
     def create_full_credentials(self, access_token, refresh_token=None):
         """

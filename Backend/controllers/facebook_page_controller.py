@@ -76,13 +76,15 @@ async def facebook_callback_controller(code: str, db: AsyncSession):
         raise HTTPException(status_code=400, detail="Failed to get access token")
 
     data = response.json()
+    
+    print("Access token data:", data)
     access_token = data.get("access_token")
 
     # 2. Lấy thông tin pages
     get_pages_url = "https://graph.facebook.com/me/accounts"
     page_params = {
         "access_token": access_token,
-        "fields": "id,name,access_token,category,category_list,tasks"
+        "fields": "id,name,access_token,instagram_business_account{id,username,profile_picture_url}"
     }
     pages_response = requests.get(get_pages_url, params=page_params)
     

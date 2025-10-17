@@ -109,4 +109,7 @@ export const HTTP_STATUS = {
     SERVER_ERROR: 500,
 };
 
-export const REQUEST_TIMEOUT = 0; // No timeout - allow upload until complete
+// Timeout configurations (in milliseconds)
+export const REQUEST_TIMEOUT = 0; // 30 seconds (default)
+export const UPLOAD_TIMEOUT = 120000; // 2 minutes (for file uploads)
+export const POST_CREATION_TIMEOUT = 300000; // 5 minutes (for creating posts - can take long with multiple platforms)

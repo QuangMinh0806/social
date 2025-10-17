@@ -112,12 +112,12 @@ class Page(Base, TimestampMixin):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     platform_id = Column(Integer, ForeignKey('platforms.id'), nullable=False)
-    page_id = Column(String(100), nullable=False)
+    page_id = Column(String(100), nullable=False)    
     page_name = Column(String(255), nullable=False)
     page_url = Column(String(255), nullable=True)
     avatar_url = Column(String(255), nullable=True)
     access_token = Column(Text, nullable=True)
-    refresh_token = Column(Text, nullable=True)  # Thêm refresh_token field
+    refresh_token = Column(Text, nullable=True)
     token_expires_at = Column(DateTime, nullable=True)
     status = Column(SQLEnum(PageStatus), default=PageStatus.connected, nullable=False)
     follower_count = Column(Integer, default=0, nullable=False)

@@ -91,8 +91,7 @@ const PageListPage = () => {
                 await pageService.update(editingPage.id, apiData);
                 toast.success('Cập nhật trang thành công');
             } else {
-                // For create, we need created_by field
-                apiData.created_by = 1; // TODO: Get from auth context
+                // For create, backend will automatically use current user ID
                 await pageService.create(apiData);
                 toast.success('Thêm trang thành công');
             }

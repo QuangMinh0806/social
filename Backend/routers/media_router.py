@@ -3,7 +3,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from config.database import get_db
 from controllers.media_controller import MediaController
 from controllers.video_import_controller import VideoImportController
-from models.model import MediaType
+from models.model import MediaType, User
+from core.auth import get_current_user
 from pydantic import BaseModel
 from typing import Optional, List
 import os
@@ -44,7 +45,6 @@ class MediaUpdate(BaseModel):
 class VideoImportRequest(BaseModel):
     urls: List[str]
     platform: str
-    user_id: Optional[int] = 1
     auto_remove_watermark: Optional[bool] = True
     use_proxy: Optional[bool] = False
 
@@ -143,6 +143,7 @@ async def mark_media_as_processed(
 @router.post("/import-video")
 async def import_videos_from_urls(
     request: VideoImportRequest,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """Import videos from URLs"""
@@ -169,7 +170,7 @@ async def import_videos_from_urls(
         result = await controller.import_videos_from_urls(
             urls=request.urls,
             platform=request.platform,
-            user_id=request.user_id,
+            user_id=current_user.id,
             auto_remove_watermark=request.auto_remove_watermark,
             use_proxy=request.use_proxy
         )
@@ -234,8 +235,8 @@ def get_image_dimensions(file_path: str):
 @router.post("/upload")
 async def upload_media(
     file: UploadFile = File(...),
-    user_id: int = Form(1),  # Default user_id = 13
     tags: Optional[str] = Form(None),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """Upload media file (image or video)"""
@@ -303,7 +304,7 @@ async def upload_media(
     
     # Tạo record trong database
     media_data = {
-        "user_id": 1,  # Fixed user_id
+        "user_id": current_user.id,  # Use current user ID
         "file_name": file.filename,
         "file_type": media_type_enum,  # Use enum instead of string
         "file_url": file_url,
@@ -324,8 +325,8 @@ async def upload_media(
 @router.post("/upload/multiple")
 async def upload_multiple_media(
     files: List[UploadFile] = File(...),
-    user_id: int = Form(1),  # Default user_id = 13
     tags: Optional[str] = Form(None),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """Upload multiple media files"""
@@ -397,7 +398,7 @@ async def upload_multiple_media(
             
             # Tạo record trong database
             media_data = {
-                "user_id": 1,  # Fixed user_id
+                "user_id": current_user.id,  # Use current user ID
                 "file_name": file.filename,
                 "file_type": media_type_enum,  # Use enum instead of string
                 "file_url": file_url,

@@ -8,6 +8,7 @@ import Textarea from '../common/Textarea';
 import Checkbox from '../common/Checkbox';
 import toast from 'react-hot-toast';
 import { mediaService } from '../../services/media.service';
+import { useAuthStore } from '../../stores/authStore';
 
 const ImportModal = ({ isOpen, onClose, onImportComplete }) => {
     const [formData, setFormData] = useState({
@@ -18,6 +19,7 @@ const ImportModal = ({ isOpen, onClose, onImportComplete }) => {
     });
     const [loading, setLoading] = useState(false);
     const [importCompleted, setImportCompleted] = useState(false);
+    const { user, isAuthenticated } = useAuthStore();
 
     const platformOptions = [
         { value: 'tiktok', label: 'TikTok' },
@@ -71,7 +73,7 @@ const ImportModal = ({ isOpen, onClose, onImportComplete }) => {
             const response = await mediaService.importFromUrl({
                 urls: urlList,
                 platform: formData.platform,
-                user_id: 1,
+                user_id: user.id,
                 auto_remove_watermark: formData.autoRemoveWatermark,
                 use_proxy: formData.useProxy
             });

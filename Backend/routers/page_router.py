@@ -2,6 +2,8 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from config.database import get_db
 from controllers.page_controller import PageController
+from core.auth import get_current_user
+from models.model import User
 
 router = APIRouter(prefix="/pages", tags=["Pages"])
 
@@ -75,6 +77,7 @@ async def get_pages_by_platform(
 @router.post("/")
 async def create_page(
     data: dict,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -93,7 +96,11 @@ async def create_page(
     - **token_expires_at**: Token expiration datetime
     - **status**: Page status ('connected', 'disconnected', 'error')
     - **follower_count**: Number of followers
+    
+    Note: created_by will be automatically set to current user
     """
+    # Add current user ID to data
+    data['created_by'] = current_user.id
     controller = PageController(db)
     return await controller.create(data)
 

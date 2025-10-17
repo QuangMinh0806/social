@@ -113,8 +113,10 @@ class YouTubeService:
         except Exception as e:
             raise HTTPException(status_code=400, detail=f"Failed to get channel information: {str(e)}")
 
-    def prepare_page_data(self, token_info, user_info, youtube_channels, platform_id=3, created_by=1):
+    def prepare_page_data(self, token_info, user_info, youtube_channels, platform_id=3, created_by=None):
         """Chuẩn bị dữ liệu để tạo page với refresh token"""
+        if created_by is None:
+            raise ValueError("created_by is required")
         """Chuẩn bị dữ liệu để tạo page với refresh token"""
         access_token = token_info.get("access_token")
         refresh_token = token_info.get("refresh_token")

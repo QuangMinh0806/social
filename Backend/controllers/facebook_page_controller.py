@@ -53,7 +53,7 @@ async def facebook_post_controller(
     return result
 
 
-async def facebook_callback_controller(code: str, db: AsyncSession):
+async def facebook_callback_controller(code: str, db: AsyncSession, user_id: int):
     """
     Controller xử lý callback từ Facebook OAuth
     1. Đổi code lấy access_token
@@ -96,7 +96,7 @@ async def facebook_callback_controller(code: str, db: AsyncSession):
     print("Pages data:", pages)
     
     # 3. Lưu vào database
-    result = await facebook_callback_service(pages, db)
+    result = await facebook_callback_service(pages, db, user_id)
     
     return result
 

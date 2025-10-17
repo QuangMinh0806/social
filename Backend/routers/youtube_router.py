@@ -4,6 +4,8 @@ from fastapi.responses import RedirectResponse
 from fastapi import APIRouter, Body, File, Form, Request, HTTPException, UploadFile, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from config.database import get_db
+from core.auth import get_current_user
+from models.model import User
 import requests
 from services.youtube_service import YouTubeService
 from pydantic import BaseModel
@@ -22,7 +24,6 @@ class YouTubeUploadRequest(BaseModel):
     tags: str = ""  # Comma-separated tags
     category_id: int = 22
     privacy_status: str = "private"  # private/unlisted/public
-    user_id: Optional[int] = None  # Optional, để xác định user nào (fallback dùng created_by=1)
 
 @router.get("/connect")
 def connect_with_youtube():
@@ -30,7 +31,14 @@ def connect_with_youtube():
     return youtube_service.get_auth_url()
 
 @router.get("/callback")
-async def youtube_callback(request: Request, code: str = None, state: str = None, error: str = None, db: AsyncSession = Depends(get_db)):
+async def youtube_callback(
+    request: Request, 
+    code: str = None, 
+    state: str = None, 
+    error: str = None, 
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     """
     Callback URL sau khi user đăng nhập YouTube
     Backend xử lý và trả về dữ liệu cho frontend xử lý
@@ -78,7 +86,7 @@ async def youtube_callback(request: Request, code: str = None, state: str = None
             user_info=user_info,
             youtube_channels=youtube_channels,
             platform_id=3,  # YouTube platform ID
-            created_by=1    # Tạm thời hardcode, frontend sẽ override
+            created_by=current_user.id
         )
         
         print("YouTube callback data prepared:", page_data)
@@ -182,8 +190,7 @@ async def upload_video_to_youtube(
         "description": "Video description", 
         "tags": "tag1,tag2,tag3",
         "category_id": 22,
-        "privacy_status": "private",
-        "user_id": 1  // Optional, default=1
+        "privacy_status": "private"
     }
     """
     try:
@@ -213,7 +220,7 @@ async def upload_video_file_to_youtube(
     tags: str = Form(""),
     category_id: int = Form(22),
     privacy_status: str = Form("private"),
-    user_id: int = Form(1),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -236,7 +243,7 @@ async def upload_video_file_to_youtube(
             tags=tags,
             category_id=category_id,
             privacy_status=privacy_status,
-            user_id=user_id,
+            user_id=current_user.id,
             db=db
         )
         return result
@@ -248,6 +255,7 @@ async def upload_video_file_to_youtube(
 @router.post("/upload-simple")
 async def upload_video_simple(
     payload: dict = Body(...),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -260,8 +268,7 @@ async def upload_video_simple(
         "description": "Video description",  // Optional
         "tags": "tag1,tag2",  // Optional
         "category_id": 22,  // Optional
-        "privacy_status": "private",  // Optional
-        "user_id": 1  // Optional, default=1
+        "privacy_status": "private"  // Optional
     }
     """
     try:
@@ -284,7 +291,7 @@ async def upload_video_simple(
             tags=payload.get("tags", ""),
             category_id=payload.get("category_id", 22),
             privacy_status=payload.get("privacy_status", "private"),
-            user_id=payload.get("user_id", 1),
+            user_id=current_user.id,
             db=db
         )
         

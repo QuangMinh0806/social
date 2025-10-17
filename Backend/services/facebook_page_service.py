@@ -5,7 +5,7 @@ import json
 from datetime import datetime
 
 
-async def facebook_callback_service(payload: dict, db: AsyncSession):
+async def facebook_callback_service(payload: dict, db: AsyncSession, user_id: int):
     """
     Lưu thông tin Facebook pages vào database
     Payload format từ Facebook Graph API:
@@ -88,7 +88,7 @@ async def facebook_callback_service(payload: dict, db: AsyncSession):
                 token_expires_at=None,  # Có thể tính toán từ expires_in nếu có
                 status=PageStatus.connected,
                 follower_count=0,  # Cần gọi API riêng để lấy
-                created_by=1,  # TODO: Lấy từ auth context, tạm thời dùng user_id = 13
+                created_by=user_id,
                 connected_at=datetime.utcnow(),
                 last_sync_at=datetime.utcnow()
             )

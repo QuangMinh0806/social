@@ -53,7 +53,7 @@ const PostCreatePage = () => {
       navigate('/login');
       return;
     }
-    
+
     fetchPages();
     fetchPlatforms();
     fetchVideoLibrary();

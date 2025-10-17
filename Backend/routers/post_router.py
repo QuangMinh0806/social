@@ -7,7 +7,7 @@ from typing import Optional, List
 from datetime import datetime
 
 
-router = APIRouter(prefix="/api/posts", tags=["Posts"])
+router = APIRouter(prefix="/posts", tags=["Posts"])
 
 
 class PostCreate(BaseModel):

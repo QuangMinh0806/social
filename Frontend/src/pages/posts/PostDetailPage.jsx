@@ -24,7 +24,7 @@ const PostDetailPage = () => {
       setLoading(true);
       const response = await postService.getById(id);
       const mainPost = response.data;
-      
+
       // Fetch all posts with same content (created around same time)
       const allPostsResponse = await postService.getAll({ limit: 1000 });
       const relatedPosts = allPostsResponse.data.filter(p => {
@@ -32,7 +32,7 @@ const PostDetailPage = () => {
         const timeDiff = Math.abs(new Date(p.created_at) - new Date(mainPost.created_at));
         return p.content === mainPost.content && timeDiff < 60000; // 60 seconds
       });
-      
+
       // Combine main post with related posts info
       setPost({
         ...mainPost,
@@ -113,7 +113,7 @@ const PostDetailPage = () => {
               <div className="flex items-center gap-2 mt-1">
                 <User size={16} className="text-gray-400" />
                 <span className="text-sm text-gray-900">{post.user?.full_name || 'Unknown'}</span>
-                <span className="text-xs text-gray-500">({post.user?.role || 'Content Editor'})</span>
+                <span className="text-xs text-gray-500">({post.user?.role || 'admin'})</span>
               </div>
             </div>
             <div>
@@ -225,9 +225,9 @@ const PostDetailPage = () => {
                         {relatedPost.page?.platform?.name || 'N/A'} • {relatedPost.page?.follower_count || 0} followers
                       </div>
                       {relatedPost.platform_post_url && (
-                        <a 
-                          href={relatedPost.platform_post_url} 
-                          target="_blank" 
+                        <a
+                          href={relatedPost.platform_post_url}
+                          target="_blank"
                           rel="noopener noreferrer"
                           className="text-xs text-blue-600 hover:underline"
                           onClick={(e) => e.stopPropagation()}

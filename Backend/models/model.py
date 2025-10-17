@@ -18,6 +18,12 @@ class TimestampMixin:
 
 
 # ==================== ENUMS ====================
+class UserRole(enum.Enum):
+    root = "root"
+    superadmin = "superadmin"
+    admin = "admin"
+
+
 class UserStatus(enum.Enum):
     active = "active"
     inactive = "inactive"
@@ -71,7 +77,7 @@ class User(Base, TimestampMixin):
     password_hash = Column(String(255), nullable=False)
     full_name = Column(String(100), nullable=True)
     avatar_url = Column(String(255), nullable=True)
-    role = Column(String(50), default='editor', nullable=False)
+    role = Column(SQLEnum(UserRole), default=UserRole.admin, nullable=False)
     status = Column(SQLEnum(UserStatus), default=UserStatus.active, nullable=False)
     last_login = Column(DateTime, nullable=True)
 
@@ -84,7 +90,7 @@ class User(Base, TimestampMixin):
     posts = relationship("Post", back_populates="user")
 
     def __repr__(self):
-        return f"<User(id={self.id}, username='{self.username}', email='{self.email}')>"
+        return f"<User(id={self.id}, username='{self.username}', email='{self.email}', role='{self.role.value}')>"
 
 
 class Platform(Base):

@@ -50,6 +50,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Add Authentication Middleware
+from core.middleware import AuthMiddleware
+app.add_middleware(AuthMiddleware)
+
 
 # Register routers
 app.include_router(auth_router.router)
@@ -91,6 +95,39 @@ async def shutdown_event():
     await engine.dispose()
     print("👋 Application shutdown complete")
 
+
+
+@app.get("/")
+async def root():
+    """API root endpoint with authentication system info"""
+    return {
+        "message": "Social Media Auto Posting API",
+        "version": settings.APP_VERSION,
+        "authentication": "JWT Bearer Token",
+        "roles": ["root", "superadmin", "admin"],
+        "docs": "/docs",
+        "endpoints": {
+            "auth": {
+                "login": "POST /auth/login",
+                "me": "GET /auth/me",
+                "change_password": "POST /auth/change-password",
+                "create_user": "POST /auth/create-user"
+            },
+            "users": {
+                "list": "GET /api/users",
+                "get": "GET /api/users/{id}",
+                "create": "POST /api/users",
+                "update": "PUT /api/users/{id}",
+                "delete": "DELETE /api/users/{id}",
+                "change_password": "POST /api/users/{id}/change-password"
+            }
+        },
+        "setup": {
+            "1": "Run: python setup_root_user.py",
+            "2": "Login with root credentials",
+            "3": "Create additional users via API"
+        }
+    }
 
 
 @app.get("/tiktokKz3ZFxrOYv1t3PSMfoZUxZ1KzimgFWoD.txt", response_class=PlainTextResponse)

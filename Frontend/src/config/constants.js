@@ -18,9 +18,7 @@ export const POST_TYPES = {
 export const USER_ROLES = {
   SUPER_ADMIN: 'super_admin',
   ADMIN: 'admin',
-  MANAGER: 'manager',
-  EDITOR: 'editor',
-  VIEWER: 'viewer',
+  ROOT: 'root'
 };
 
 export const USER_STATUS = {

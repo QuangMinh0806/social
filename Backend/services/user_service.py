@@ -1,118 +1,223 @@
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update, delete
-import sys
-sys.path.append('..')
-from models.model import User
-from typing import List, Optional, Dict
-from datetime import datetime
+from typing import List, Optional
+from sqlalchemy import select, and_, or_, cast, String
+from sqlalchemy.orm import selectinload
+from config.database import async_session_maker
+from models.model import User, UserRole, UserStatus
+from core.auth import get_password_hash, can_view_user, can_manage_user
+from core.schemas import UserCreate, UserUpdate, CreateUserByAdminRequest
 
 
 class UserService:
-    """Service layer for User operations"""
+    """Service class for user management operations"""
     
-    def __init__(self, db: AsyncSession):
-        self.db = db
+    async def get_user_by_id(self, user_id: int, current_user: User) -> Optional[User]:
+        """Lấy user theo ID với kiểm tra quyền xem"""
+        async with async_session_maker() as session:
+            stmt = select(User).where(User.id == user_id)
+            result = await session.execute(stmt)
+            user = result.scalar_one_or_none()
+            
+            if not user:
+                return None
+            
+            # Kiểm tra quyền xem user
+            if not can_view_user(current_user, user):
+                return None
+                
+            return user
     
-    async def get_all(self, skip: int = 0, limit: int = 100, search: str = None, role: str = None, status: str = None) -> List[Dict]:
-        """Get all users with pagination, search and filters"""
-        query = select(User)
-        
-        # Apply search filter
-        if search:
-            search_pattern = f"%{search}%"
-            query = query.where(
-                (User.username.ilike(search_pattern)) |
-                (User.email.ilike(search_pattern)) |
-                (User.full_name.ilike(search_pattern))
+    async def get_users_list(
+        self, 
+        current_user: User,
+        skip: int = 0, 
+        limit: int = 100,
+        role_filter: Optional[UserRole] = None,
+        status_filter: Optional[UserStatus] = None,
+        search: Optional[str] = None
+    ) -> List[User]:
+        """Lấy danh sách users với phân quyền và filter"""
+        try:
+            async with async_session_maker() as session:
+                # Base query
+                stmt = select(User)
+                
+                # Phân quyền: mỗi role chỉ thấy users theo hierarchy
+                if current_user.role == UserRole.root:
+                    # Root thấy tất cả
+                    pass
+                elif current_user.role == UserRole.superadmin:
+                    # Superadmin không thấy root
+                    stmt = stmt.where(cast(User.role, String) != UserRole.root.value)
+                elif current_user.role == UserRole.admin:
+                    # Admin chỉ thấy admin
+                    stmt = stmt.where(cast(User.role, String) == UserRole.admin.value)
+                
+                # Apply filters
+                if role_filter:
+                    role_value = role_filter.value if hasattr(role_filter, 'value') else role_filter
+                    stmt = stmt.where(cast(User.role, String) == role_value)
+                
+                if status_filter:
+                    status_value = status_filter.value if hasattr(status_filter, 'value') else status_filter
+                    stmt = stmt.where(cast(User.status, String) == status_value)
+                
+                if search:
+                    search_term = f"%{search}%"
+                    stmt = stmt.where(
+                        or_(
+                            User.username.ilike(search_term),
+                            User.email.ilike(search_term),
+                            User.full_name.ilike(search_term)
+                        )
+                    )
+                
+                # Add pagination
+                stmt = stmt.offset(skip).limit(limit)
+                
+                result = await session.execute(stmt)
+                return result.scalars().all()
+        except Exception as e:
+            print(f"Error in get_users_list: {str(e)}")
+            raise e
+    
+    async def create_user(self, user_data: CreateUserByAdminRequest, created_by: User) -> User:
+        """Tạo user mới"""
+        async with async_session_maker() as session:
+            # Hash password
+            password_hash = get_password_hash(user_data.password)
+            
+            # Create new user
+            new_user = User(
+                username=user_data.username,
+                email=user_data.email,
+                password_hash=password_hash,
+                full_name=user_data.full_name,
+                avatar_url=user_data.avatar_url,
+                role=user_data.role,
+                status=user_data.status if user_data.status else UserStatus.active
             )
-        
-        # Apply role filter
-        if role and role != 'all':
-            query = query.where(User.role == role)
-        
-        # Apply status filter
-        if status and status != 'all':
-            from models.model import UserStatus
-            try:
-                status_enum = UserStatus[status]
-                query = query.where(User.status == status_enum)
-            except KeyError:
-                pass
-        
-        # Apply pagination
-        query = query.offset(skip).limit(limit)
-        
-        result = await self.db.execute(query)
-        users = result.scalars().all()
-        return [self._to_dict(user) for user in users]
+            
+            session.add(new_user)
+            await session.commit()
+            await session.refresh(new_user)
+            
+            return new_user
     
-    async def get_by_id(self, user_id: int) -> Optional[Dict]:
-        """Get user by ID"""
-        query = select(User).where(User.id == user_id)
-        result = await self.db.execute(query)
-        user = result.scalar_one_or_none()
-        return self._to_dict(user) if user else None
+    async def update_user(
+        self, 
+        user_id: int, 
+        user_data: UserUpdate, 
+        current_user: User
+    ) -> Optional[User]:
+        """Cập nhật thông tin user"""
+        async with async_session_maker() as session:
+            stmt = select(User).where(User.id == user_id)
+            result = await session.execute(stmt)
+            user = result.scalar_one_or_none()
+            
+            if not user:
+                return None
+            
+            # Kiểm tra quyền sửa user
+            if not can_manage_user(current_user, user.role):
+                return None
+            
+            # Update fields
+            if user_data.email is not None:
+                user.email = user_data.email
+            if user_data.full_name is not None:
+                user.full_name = user_data.full_name
+            if user_data.avatar_url is not None:
+                user.avatar_url = user_data.avatar_url
+            if user_data.status is not None:
+                user.status = user_data.status
+            
+            await session.commit()
+            await session.refresh(user)
+            
+            return user
     
-    async def get_by_email(self, email: str) -> Optional[Dict]:
-        """Get user by email address"""
-        query = select(User).where(User.email == email)
-        result = await self.db.execute(query)
-        user = result.scalar_one_or_none()
-        return self._to_dict(user) if user else None
+    async def delete_user(self, user_id: int, current_user: User) -> bool:
+        """Xóa user (soft delete bằng cách set status = inactive)"""
+        async with async_session_maker() as session:
+            stmt = select(User).where(User.id == user_id)
+            result = await session.execute(stmt)
+            user = result.scalar_one_or_none()
+            
+            if not user:
+                return False
+            
+            # Kiểm tra quyền xóa user
+            if not can_manage_user(current_user, user.role):
+                return False
+            
+            # Không cho phép tự xóa bản thân
+            if user.id == current_user.id:
+                return False
+            
+            # Soft delete
+            user.status = UserStatus.inactive
+            await session.commit()
+            
+            return True
     
-    async def get_by_username(self, username: str) -> Optional[Dict]:
-        """Get user by username"""
-        query = select(User).where(User.username == username)
-        result = await self.db.execute(query)
-        user = result.scalar_one_or_none()
-        return self._to_dict(user) if user else None
+    async def change_user_password(
+        self, 
+        user_id: int, 
+        new_password: str, 
+        current_user: User
+    ) -> bool:
+        """Đổi mật khẩu cho user khác (chỉ admin trở lên)"""
+        async with async_session_maker() as session:
+            stmt = select(User).where(User.id == user_id)
+            result = await session.execute(stmt)
+            user = result.scalar_one_or_none()
+            
+            if not user:
+                return False
+            
+            # Kiểm tra quyền đổi mật khẩu
+            if not can_manage_user(current_user, user.role):
+                return False
+            
+            # Update password
+            user.password_hash = get_password_hash(new_password)
+            await session.commit()
+            
+            return True
     
-    async def create(self, data: dict) -> Dict:
-        """Create a new user"""
-        user = User(**data)
-        self.db.add(user)
-        await self.db.commit()
-        await self.db.refresh(user)
-        return self._to_dict(user)
+    async def get_users_count(self, current_user: User) -> int:
+        """Đếm số lượng users theo quyền"""
+        async with async_session_maker() as session:
+            stmt = select(User)
+            
+            # Apply role-based filtering
+            if current_user.role == UserRole.root:
+                pass  # Root sees all
+            elif current_user.role == UserRole.superadmin:
+                stmt = stmt.where(User.role != UserRole.root)
+            elif current_user.role == UserRole.admin:
+                stmt = stmt.where(User.role == UserRole.admin)
+            
+            result = await session.execute(stmt)
+            return len(result.scalars().all())
     
-    async def update(self, user_id: int, data: dict) -> Optional[Dict]:
-        """Update user information"""
-        query = (
-            update(User)
-            .where(User.id == user_id)
-            .values(**data)
-            .returning(User)
-        )
-        result = await self.db.execute(query)
-        await self.db.commit()
-        user = result.scalar_one_or_none()
-        return self._to_dict(user) if user else None
+    async def check_username_exists(self, username: str, exclude_id: Optional[int] = None) -> bool:
+        """Kiểm tra username đã tồn tại"""
+        async with async_session_maker() as session:
+            stmt = select(User).where(User.username == username)
+            if exclude_id:
+                stmt = stmt.where(User.id != exclude_id)
+            
+            result = await session.execute(stmt)
+            return result.scalar_one_or_none() is not None
     
-    async def update_last_login(self, user_id: int) -> Optional[Dict]:
-        """Update user's last login timestamp"""
-        data = {"last_login": datetime.utcnow()}
-        return await self.update(user_id, data)
-    
-    async def delete(self, user_id: int) -> bool:
-        """Delete a user"""
-        query = delete(User).where(User.id == user_id)
-        result = await self.db.execute(query)
-        await self.db.commit()
-        return result.rowcount > 0
-    
-    def _to_dict(self, user: User) -> Dict:
-        """Convert SQLAlchemy User model to dictionary"""
-        if not user:
-            return None
-        return {
-            "id": user.id,
-            "username": user.username,
-            "email": user.email,
-            "full_name": user.full_name,
-            "avatar_url": user.avatar_url,
-            "role": user.role,
-            "status": user.status.value if hasattr(user.status, 'value') else user.status,
-            "last_login": user.last_login.isoformat() if user.last_login else None,
-            "created_at": user.created_at.isoformat() if user.created_at else None,
-            "updated_at": user.updated_at.isoformat() if user.updated_at else None
-        }
+    async def check_email_exists(self, email: str, exclude_id: Optional[int] = None) -> bool:
+        """Kiểm tra email đã tồn tại"""
+        async with async_session_maker() as session:
+            stmt = select(User).where(User.email == email)
+            if exclude_id:
+                stmt = stmt.where(User.id != exclude_id)
+            
+            result = await session.execute(stmt)
+            return result.scalar_one_or_none() is not None

@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
-import { userService } from '../../services/user.service';
+import { userService } from '../../services/userService.js';
 import toast from 'react-hot-toast';
-import { 
-  FaUsers, 
-  FaUserCheck, 
-  FaUserPlus, 
-  FaSearch, 
-  FaEdit, 
-  FaTrash, 
+import {
+  FaUsers,
+  FaUserCheck,
+  FaUserPlus,
+  FaSearch,
+  FaEdit,
+  FaTrash,
   FaEye,
   FaFileExport,
   FaFileImport,
@@ -39,7 +39,7 @@ const EmployeeListPage = () => {
   const fetchEmployees = async () => {
     setLoading(true);
     try {
-      const response = await userService.getAll({ skip: 0, limit: 1000 });
+      const response = await userService.getUsers({ skip: 0, limit: 1000 });
       if (response.success) {
         setEmployees(response.data);
         calculateStatistics(response.data);
@@ -55,13 +55,13 @@ const EmployeeListPage = () => {
   const calculateStatistics = (data) => {
     const total = data.length;
     const active = data.filter(emp => emp.status === 'active').length;
-    
+
     const currentMonth = new Date().getMonth();
     const currentYear = new Date().getFullYear();
     const newThisMonth = data.filter(emp => {
       const createdDate = new Date(emp.created_at);
-      return createdDate.getMonth() === currentMonth && 
-             createdDate.getFullYear() === currentYear;
+      return createdDate.getMonth() === currentMonth &&
+        createdDate.getFullYear() === currentYear;
     }).length;
 
     setStatistics({ total, active, newThisMonth });
@@ -69,7 +69,7 @@ const EmployeeListPage = () => {
 
   // Filter employees
   const filteredEmployees = employees.filter(emp => {
-    const matchesSearch = 
+    const matchesSearch =
       emp.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       emp.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       emp.full_name?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -119,11 +119,11 @@ const EmployeeListPage = () => {
     try {
       if (selectedEmployee) {
         // Update
-        await userService.update(selectedEmployee.id, data);
+        await userService.updateUser(selectedEmployee.id, data);
         toast.success('Cập nhật nhân viên thành công');
       } else {
         // Create
-        await userService.create(data);
+        await userService.createUser(data);
         toast.success('Thêm nhân viên thành công');
       }
       setIsModalOpen(false);
@@ -139,10 +139,7 @@ const EmployeeListPage = () => {
     const colors = {
       'Super Admin': 'bg-red-100 text-red-800',
       'Admin': 'bg-blue-100 text-blue-800',
-      'Content Editor': 'bg-purple-100 text-purple-800',
-      'Social Media Specialist': 'bg-green-100 text-green-800',
-      'Video Producer': 'bg-yellow-100 text-yellow-800',
-      'editor': 'bg-gray-100 text-gray-800'
+      'Root': 'bg-purple-100 text-purple-800',
     };
     return colors[role] || 'bg-gray-100 text-gray-800';
   };
@@ -258,13 +255,9 @@ const EmployeeListPage = () => {
               onChange={(e) => setRoleFilter(e.target.value)}
               className="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              <option value="all">Tất cả vai trò</option>
+              <option value="admin">Admin</option>
               <option value="Super Admin">Super Admin</option>
-              <option value="Admin">Admin</option>
-              <option value="Content Editor">Content Editor</option>
-              <option value="Social Media Specialist">Social Media Specialist</option>
-              <option value="Video Producer">Video Producer</option>
-              <option value="editor">Editor</option>
+              <option value="root">Root</option>
             </select>
           </div>
 

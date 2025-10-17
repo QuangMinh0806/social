@@ -11,10 +11,16 @@ class Settings:
     DATABASE_URL: str = os.getenv(
         "DATABASE_URL")
     print(f"Using DATABASE_URL: {DATABASE_URL}")
+    
     # Application
     APP_NAME: str = "Social Media Auto Posting API"
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = os.getenv("DEBUG", "True").lower() == "true"
+    
+    # JWT Configuration
+    SECRET_KEY: str = os.getenv("SECRET_KEY")
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES"))
     
     # CORS
     CORS_ORIGINS: list = ["*"]

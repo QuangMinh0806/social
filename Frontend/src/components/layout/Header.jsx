@@ -1,17 +1,29 @@
-import { Bell, Search, User, LogOut, Settings } from 'lucide-react';
+import { Bell, Search, User, LogOut, Settings, Crown, ShieldCheck, Shield } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext.jsx';
 import Avatar from '../common/Avatar';
 
 const Header = () => {
   const navigate = useNavigate();
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const { user, logout, getRoleLabel } = useAuth();
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    navigate('/login');
+    logout();
+  };
+
+  const getRoleIcon = (role) => {
+    switch (role) {
+      case 'root':
+        return <Crown className="h-4 w-4 text-yellow-500" />;
+      case 'superadmin':
+        return <ShieldCheck className="h-4 w-4 text-purple-500" />;
+      case 'admin':
+        return <Shield className="h-4 w-4 text-blue-500" />;
+      default:
+        return <User className="h-4 w-4 text-gray-500" />;
+    }
   };
 
   return (
@@ -39,14 +51,21 @@ const Header = () => {
               onClick={() => setShowUserMenu(!showUserMenu)}
               className="flex items-center gap-3 p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
-              <Avatar 
-                src={user.avatar} 
-                fallback={user.full_name || user.username}
+              <Avatar
+                src={user?.avatar_url}
+                fallback={user?.full_name || user?.username}
                 size="md"
               />
               <div className="text-left">
-                <p className="text-sm font-medium text-gray-900">{user.full_name || user.username}</p>
-                <p className="text-xs text-gray-500">{user.role}</p>
+                <p className="text-sm font-medium text-gray-900">
+                  {user?.full_name || user?.username}
+                </p>
+                <div className="flex items-center gap-1">
+                  {getRoleIcon(user?.role)}
+                  <span className="text-xs text-gray-500">
+                    {getRoleLabel(user?.role)}
+                  </span>
+                </div>
               </div>
             </button>
 

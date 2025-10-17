@@ -60,7 +60,7 @@ const YoutubeCallback = () => {
                 setMessage('Đang lấy thông tin từ YouTube...')
                 console.log('🚀 Calling YouTube callback API with code:', code)
 
-                const response = await axios.get(`http://localhost:8000/youtube/callback`, {
+                const response = await axios.get(`http://localhost:8000/api/youtube/callback`, {
                     params: { code, state },
                     timeout: 30000 // 30 seconds timeout
                 })

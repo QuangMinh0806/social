@@ -1,161 +1,157 @@
-from sqlalchemy.ext.asyncio import AsyncSession
+from typing import List, Optional
+from models.model import User, UserRole, UserStatus
 from services.user_service import UserService
 from core.response import success_response, error_response
 from core.exceptions import NotFoundException, BadRequestException, ConflictException
+from core.schemas import UserResponse, UserUpdate, CreateUserByAdminRequest
 
 
 class UserController:
-    """Controller layer for User operations"""
+    """Controller layer for User operations with role-based access control"""
     
-    def __init__(self, db: AsyncSession):
-        self.service = UserService(db)
+    def __init__(self):
+        self.service = UserService()
     
-    async def get_all(self, skip: int, limit: int, search: str = None, role: str = None, status: str = None):
-        """Get all users with pagination, search and filters"""
+    async def get_users_list(
+        self, 
+        current_user: User,
+        skip: int = 0, 
+        limit: int = 100,
+        search: Optional[str] = None,
+        role_filter: Optional[UserRole] = None,
+        status_filter: Optional[UserStatus] = None
+    ):
+        """Get users list with role-based filtering"""
         try:
-            users = await self.service.get_all(skip, limit, search, role, status)
+            users = await self.service.get_users_list(
+                current_user=current_user,
+                skip=skip,
+                limit=limit,
+                role_filter=role_filter,
+                status_filter=status_filter,
+                search=search
+            )
             return success_response(
-                data=users,
-                message=f"Retrieved {len(users)} users successfully"
+                data=[self._user_to_dict(user) for user in users],
+                message=f"Lấy danh sách {len(users)} users thành công"
             )
         except Exception as e:
-            return error_response(
-                message="Failed to retrieve users",
-                error=str(e)
-            )
+            return error_response(f"Lỗi khi lấy danh sách users: {str(e)}")
     
-    async def get_by_id(self, user_id: int):
-        """Get user by ID"""
+    async def get_user_by_id(self, user_id: int, current_user: User):
+        """Get user by ID with permission check"""
         try:
-            user = await self.service.get_by_id(user_id)
+            user = await self.service.get_user_by_id(user_id, current_user)
             if not user:
-                raise NotFoundException(f"User with ID {user_id} not found")
+                raise NotFoundException("Không tìm thấy user hoặc bạn không có quyền xem")
+            
             return success_response(
-                data=user,
-                message="User retrieved successfully"
+                data=self._user_to_dict(user),
+                message="Lấy thông tin user thành công"
             )
         except NotFoundException as e:
-            raise e
+            return error_response(str(e), status_code=404)
         except Exception as e:
-            return error_response(
-                message="Failed to retrieve user",
-                error=str(e)
-            )
+            return error_response(f"Lỗi khi lấy thông tin user: {str(e)}")
     
-    async def get_by_email(self, email: str):
-        """Get user by email"""
+    async def create_user(self, user_data: CreateUserByAdminRequest, current_user: User):
+        """Create new user with permission check"""
         try:
-            user = await self.service.get_by_email(email)
-            if not user:
-                raise NotFoundException(f"User with email {email} not found")
+            # Kiểm tra username đã tồn tại
+            if await self.service.check_username_exists(user_data.username):
+                raise ConflictException("Tên đăng nhập đã tồn tại")
+            
+            # Kiểm tra email đã tồn tại
+            if await self.service.check_email_exists(user_data.email):
+                raise ConflictException("Email đã tồn tại")
+            
+            new_user = await self.service.create_user(user_data, current_user)
             return success_response(
-                data=user,
-                message="User retrieved successfully"
+                data=self._user_to_dict(new_user),
+                message="Tạo user thành công"
             )
-        except NotFoundException as e:
-            raise e
+        except ConflictException as e:
+            return error_response(str(e), status_code=409)
         except Exception as e:
-            return error_response(
-                message="Failed to retrieve user by email",
-                error=str(e)
-            )
+            return error_response(f"Lỗi khi tạo user: {str(e)}")
     
-    async def create(self, data: dict):
-        """Create a new user"""
+    async def update_user(self, user_id: int, user_data: UserUpdate, current_user: User):
+        """Update user with permission check"""
         try:
-            # Validation
-            required_fields = ["username", "email", "password_hash"]
-            for field in required_fields:
-                if field not in data:
-                    raise BadRequestException(f"Missing required field: {field}")
+            # Kiểm tra email trùng (nếu có cập nhật email)
+            if user_data.email and await self.service.check_email_exists(user_data.email, user_id):
+                raise ConflictException("Email đã tồn tại")
             
-            # Check if username already exists
-            existing_user = await self.service.get_by_username(data["username"])
-            if existing_user:
-                raise ConflictException(f"Username '{data['username']}' already exists")
+            updated_user = await self.service.update_user(user_id, user_data, current_user)
+            if not updated_user:
+                raise NotFoundException("Không tìm thấy user hoặc bạn không có quyền cập nhật")
             
-            # Check if email already exists
-            existing_email = await self.service.get_by_email(data["email"])
-            if existing_email:
-                raise ConflictException(f"Email '{data['email']}' already exists")
-            
-            user = await self.service.create(data)
             return success_response(
-                data=user,
-                message="User created successfully"
-            )
-        except (BadRequestException, ConflictException) as e:
-            raise e
-        except Exception as e:
-            return error_response(
-                message="Failed to create user",
-                error=str(e)
-            )
-    
-    async def update(self, user_id: int, data: dict):
-        """Update user information"""
-        try:
-            # Check if user exists
-            existing_user = await self.service.get_by_id(user_id)
-            if not existing_user:
-                raise NotFoundException(f"User with ID {user_id} not found")
-            
-            # If updating username, check for conflicts
-            if "username" in data and data["username"] != existing_user["username"]:
-                conflict_user = await self.service.get_by_username(data["username"])
-                if conflict_user:
-                    raise ConflictException(f"Username '{data['username']}' already exists")
-            
-            # If updating email, check for conflicts
-            if "email" in data and data["email"] != existing_user["email"]:
-                conflict_email = await self.service.get_by_email(data["email"])
-                if conflict_email:
-                    raise ConflictException(f"Email '{data['email']}' already exists")
-            
-            user = await self.service.update(user_id, data)
-            return success_response(
-                data=user,
-                message="User updated successfully"
+                data=self._user_to_dict(updated_user),
+                message="Cập nhật user thành công"
             )
         except (NotFoundException, ConflictException) as e:
-            raise e
+            status_code = 404 if isinstance(e, NotFoundException) else 409
+            return error_response(str(e), status_code=status_code)
         except Exception as e:
-            return error_response(
-                message="Failed to update user",
-                error=str(e)
-            )
+            return error_response(f"Lỗi khi cập nhật user: {str(e)}")
     
-    async def update_last_login(self, user_id: int):
-        """Update user's last login timestamp"""
+    async def delete_user(self, user_id: int, current_user: User):
+        """Delete user (soft delete) with permission check"""
         try:
-            user = await self.service.update_last_login(user_id)
-            if not user:
-                raise NotFoundException(f"User with ID {user_id} not found")
-            return success_response(
-                data=user,
-                message="Last login updated successfully"
-            )
-        except NotFoundException as e:
-            raise e
-        except Exception as e:
-            return error_response(
-                message="Failed to update last login",
-                error=str(e)
-            )
-    
-    async def delete(self, user_id: int):
-        """Delete a user"""
-        try:
-            success = await self.service.delete(user_id)
+            success = await self.service.delete_user(user_id, current_user)
             if not success:
-                raise NotFoundException(f"User with ID {user_id} not found")
+                raise NotFoundException("Không tìm thấy user hoặc bạn không có quyền xóa")
+            
             return success_response(
-                message="User deleted successfully"
+                message="Xóa user thành công"
             )
         except NotFoundException as e:
-            raise e
+            return error_response(str(e), status_code=404)
         except Exception as e:
-            return error_response(
-                message="Failed to delete user",
-                error=str(e)
+            return error_response(f"Lỗi khi xóa user: {str(e)}")
+    
+    async def change_user_password(self, user_id: int, new_password: str, current_user: User):
+        """Change password for another user with permission check"""
+        try:
+            if len(new_password) < 6:
+                raise BadRequestException("Mật khẩu phải có ít nhất 6 ký tự")
+            
+            success = await self.service.change_user_password(user_id, new_password, current_user)
+            if not success:
+                raise NotFoundException("Không tìm thấy user hoặc bạn không có quyền đổi mật khẩu")
+            
+            return success_response(
+                message="Đổi mật khẩu thành công"
             )
+        except (NotFoundException, BadRequestException) as e:
+            status_code = 404 if isinstance(e, NotFoundException) else 400
+            return error_response(str(e), status_code=status_code)
+        except Exception as e:
+            return error_response(f"Lỗi khi đổi mật khẩu: {str(e)}")
+    
+    async def get_users_count(self, current_user: User):
+        """Get users count based on permission"""
+        try:
+            count = await self.service.get_users_count(current_user)
+            return success_response(
+                data={"total_users": count},
+                message="Lấy số lượng users thành công"
+            )
+        except Exception as e:
+            return error_response(f"Lỗi khi đếm users: {str(e)}")
+    
+    def _user_to_dict(self, user: User) -> dict:
+        """Convert User model to dictionary for response"""
+        return {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "full_name": user.full_name,
+            "avatar_url": user.avatar_url,
+            "role": user.role.value if user.role else None,
+            "status": user.status.value if user.status else None,
+            "last_login": user.last_login.isoformat() if user.last_login else None,
+            "created_at": user.created_at.isoformat() if user.created_at else None,
+            "created_by": user.created_by
+        }

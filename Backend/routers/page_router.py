@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from config.database import get_db
 from controllers.page_controller import PageController
 
-router = APIRouter(prefix="/api/pages", tags=["Pages"])
+router = APIRouter(prefix="/pages", tags=["Pages"])
 
 
 @router.get("/")

@@ -14,7 +14,7 @@ from PIL import Image
 import mimetypes
 
 
-router = APIRouter(prefix="/api/media", tags=["Media"])
+router = APIRouter(prefix="/media", tags=["Media"])
 
 
 class MediaCreate(BaseModel):

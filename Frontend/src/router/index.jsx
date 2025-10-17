@@ -1,6 +1,7 @@
 import { createBrowserRouter } from "react-router-dom";
 import MainLayout from "../layouts/MainLayout";
 import AuthLayout from "../layouts/AuthLayout";
+import { ProtectedRoute, PublicRoute, AdminRoute } from "../components/common/ProtectedRoute";
 
 // Pages
 import DashboardPage from "../pages/dashboard/DashboardPage";
@@ -18,16 +19,46 @@ import TemplateEditPage from "../pages/templates/TemplateEditPage";
 import MediaLibraryPage from "../pages/media/MediaLibraryPage";
 import EmployeeListPage from "../pages/employees/EmployeeListPage";
 import LoginPage from "../pages/auth/LoginPage";
+import RegisterPage from "../pages/auth/RegisterPage";
 import NotFoundPage from "../pages/NotFoundPage";
+import UnauthorizedPage from "../pages/UnauthorizedPage";
+import UserManagementPage from "../pages/users/UserManagementPage";
 import YoutubeCallback from "../pages/YoutubeCallback";
 import Config from "../pages/config/Config";
 
 import { ROUTES } from "../config/constants";
 
 const router = createBrowserRouter([
+    // Auth routes (public)
+    {
+        path: "/login",
+        element: (
+            <PublicRoute>
+                <LoginPage />
+            </PublicRoute>
+        ),
+    },
+    {
+        path: "/register",
+        element: (
+            <PublicRoute>
+                <RegisterPage />
+            </PublicRoute>
+        ),
+    },
+    {
+        path: "/unauthorized",
+        element: <UnauthorizedPage />,
+    },
+
+    // Protected routes
     {
         path: "/",
-        element: <MainLayout />,
+        element: (
+            <ProtectedRoute>
+                <MainLayout />
+            </ProtectedRoute>
+        ),
         children: [
             { index: true, element: <DashboardPage /> },
             { path: ROUTES.DASHBOARD, element: <DashboardPage /> },
@@ -43,6 +74,16 @@ const router = createBrowserRouter([
 
             // Pages
             { path: ROUTES.PAGES, element: <PageListPage /> },
+
+            // User Management (Admin only)
+            {
+                path: "/users",
+                element: (
+                    <AdminRoute>
+                        <UserManagementPage />
+                    </AdminRoute>
+                )
+            },
 
             // Employees
             { path: ROUTES.EMPLOYEES, element: <EmployeeListPage /> },
@@ -63,16 +104,10 @@ const router = createBrowserRouter([
 
             // Config
             { path: ROUTES.CONFIG, element: <Config /> },
+
+            // Youtube callback
+            { path: "/youtube/callback", element: <YoutubeCallback /> },
         ],
-    },
-    {
-        path: "/youtube/callback",
-        element: <YoutubeCallback />,
-    },
-    {
-        path: "/",
-        element: <AuthLayout />,
-        children: [{ path: ROUTES.LOGIN, element: <LoginPage /> }],
     },
     {
         path: "*",

@@ -1,17 +1,20 @@
-export const API_BASE_URL = 'http://localhost:8000/api';
+export const API_BASE_URL = 'http://localhost:8000';
 
 export const API_ENDPOINTS = {
-    // Auth
+    // Auth - Updated for new authentication system
     LOGIN: '/auth/login',
     REGISTER: '/auth/register',
     LOGOUT: '/auth/logout',
-    REFRESH_TOKEN: '/auth/refresh',
+    GET_CURRENT_USER: '/auth/me',
+    CHANGE_PASSWORD: '/auth/change-password',
 
-    // Users
-    USERS: '/users',
-    USER_BY_ID: (id) => `/users/${id}`,
-    USER_BY_EMAIL: (email) => `/users/email/${email}`,
-    UPDATE_LAST_LOGIN: (id) => `/users/${id}/last-login`,
+    // Users - Updated for new user management
+    USERS: '/api/users',
+    USER_BY_ID: (id) => `/api/users/${id}`,
+    CREATE_USER: '/api/users',
+    UPDATE_USER: (id) => `/api/users/${id}`,
+    DELETE_USER: (id) => `/api/users/${id}`,
+    CHANGE_USER_PASSWORD: (id) => `/api/users/${id}/change-password`,
 
     // Platforms
     PLATFORMS: '/platforms',

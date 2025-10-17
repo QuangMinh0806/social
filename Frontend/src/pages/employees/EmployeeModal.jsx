@@ -8,7 +8,7 @@ const EmployeeModal = ({ isOpen, onClose, onSave, employee }) => {
     password_hash: '',
     full_name: '',
     avatar_url: '',
-    role: 'editor',
+    role: 'admin',
     status: 'active'
   });
 
@@ -22,7 +22,7 @@ const EmployeeModal = ({ isOpen, onClose, onSave, employee }) => {
         password_hash: '', // Don't show password
         full_name: employee.full_name || '',
         avatar_url: employee.avatar_url || '',
-        role: employee.role || 'editor',
+        role: employee.role || 'admin',
         status: employee.status || 'active'
       });
     } else {
@@ -32,7 +32,7 @@ const EmployeeModal = ({ isOpen, onClose, onSave, employee }) => {
         password_hash: '',
         full_name: '',
         avatar_url: '',
-        role: 'editor',
+        role: 'admin',
         status: 'active'
       });
     }
@@ -79,14 +79,14 @@ const EmployeeModal = ({ isOpen, onClose, onSave, employee }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     if (!validate()) {
       return;
     }
 
     // Prepare data to send
     const dataToSend = { ...formData };
-    
+
     // If updating and no password provided, remove password field
     if (employee && !dataToSend.password_hash) {
       delete dataToSend.password_hash;
@@ -129,9 +129,8 @@ const EmployeeModal = ({ isOpen, onClose, onSave, employee }) => {
                 value={formData.username}
                 onChange={handleChange}
                 disabled={!!employee} // Disable when editing
-                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  errors.username ? 'border-red-500' : 'border-gray-300'
-                } ${employee ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.username ? 'border-red-500' : 'border-gray-300'
+                  } ${employee ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                 placeholder="Nhập tên đăng nhập"
               />
               {errors.username && (
@@ -150,9 +149,8 @@ const EmployeeModal = ({ isOpen, onClose, onSave, employee }) => {
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  errors.email ? 'border-red-500' : 'border-gray-300'
-                }`}
+                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.email ? 'border-red-500' : 'border-gray-300'
+                  }`}
                 placeholder="Nhập email"
               />
               {errors.email && (
@@ -171,9 +169,8 @@ const EmployeeModal = ({ isOpen, onClose, onSave, employee }) => {
                 name="password_hash"
                 value={formData.password_hash}
                 onChange={handleChange}
-                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  errors.password_hash ? 'border-red-500' : 'border-gray-300'
-                }`}
+                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.password_hash ? 'border-red-500' : 'border-gray-300'
+                  }`}
                 placeholder={employee ? "Để trống nếu không đổi mật khẩu" : "Nhập mật khẩu"}
               />
               {errors.password_hash && (
@@ -192,9 +189,8 @@ const EmployeeModal = ({ isOpen, onClose, onSave, employee }) => {
                 name="full_name"
                 value={formData.full_name}
                 onChange={handleChange}
-                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  errors.full_name ? 'border-red-500' : 'border-gray-300'
-                }`}
+                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.full_name ? 'border-red-500' : 'border-gray-300'
+                  }`}
                 placeholder="Nhập họ và tên"
               />
               {errors.full_name && (
@@ -214,12 +210,9 @@ const EmployeeModal = ({ isOpen, onClose, onSave, employee }) => {
                 onChange={handleChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
-                <option value="editor">Editor</option>
-                <option value="Admin">Admin</option>
+                <option value="admin">Admin</option>
                 <option value="Super Admin">Super Admin</option>
-                <option value="Content Editor">Content Editor</option>
-                <option value="Social Media Specialist">Social Media Specialist</option>
-                <option value="Video Producer">Video Producer</option>
+                <option value="root">Root</option>
               </select>
             </div>
 

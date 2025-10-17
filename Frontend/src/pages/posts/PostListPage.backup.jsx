@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Plus, Search, Filter, Eye, Edit, Trash2, Image as ImageIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -11,11 +11,11 @@ import Loading from '../../components/common/Loading';
 import Pagination from '../../components/common/Pagination';
 import Breadcrumb from '../../components/layout/Breadcrumb';
 import { formatDate } from '../../utils/dateFormatter';
+import { usePaginatedFetch } from '../../hooks/useFetch';
 
-const PostListPage = () => {
+const PostListPage = React.memo(() => {
   const navigate = useNavigate();
   const [posts, setPosts] = useState([]);
-  const [groupedPosts, setGroupedPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -26,26 +26,21 @@ const PostListPage = () => {
     fetchPosts();
   }, [currentPage, statusFilter]);
 
-  useEffect(() => {
-    // Group posts by content and created_at (similar posts within 1 minute)
-    groupPostsByContent();
-  }, [posts]);
-
-  const fetchPosts = async () => {
+  const fetchPosts = useCallback(async () => {
     try {
       setLoading(true);
       const params = {
         skip: (currentPage - 1) * 20,
         limit: 100, // Lấy nhiều hơn để group
       };
-
+      
       let response;
       if (statusFilter) {
         response = await postService.getByStatus(statusFilter, params);
       } else {
         response = await postService.getAll(params);
       }
-
+      
       setPosts(response.data || []);
       setTotalPages(Math.ceil((response.total || 100) / 20));
     } catch (error) {
@@ -53,18 +48,20 @@ const PostListPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentPage, statusFilter]);
 
-  const groupPostsByContent = () => {
-    // Group posts by content (same content = same campaign)
+  // Memoized grouped posts calculation
+  const groupedPosts = useMemo(() => {
+    if (!posts?.length) return [];
+
     const groups = {};
-
+    
     posts.forEach(post => {
       // Create a key based on content and approximate time
       const contentKey = post.content.substring(0, 100); // First 100 chars
       const timeKey = new Date(post.created_at).toISOString().substring(0, 16); // Group by minute
       const key = `${contentKey}_${timeKey}`;
-
+      
       if (!groups[key]) {
         groups[key] = {
           id: post.id, // Use first post ID as group ID
@@ -78,7 +75,7 @@ const PostListPage = () => {
           status: post.status,
         };
       }
-
+      
       groups[key].posts.push(post);
       groups[key].pages.push({
         id: post.page?.id,
@@ -87,18 +84,50 @@ const PostListPage = () => {
         status: post.status,
       });
     });
-
+    
     // Convert to array and sort by created_at
-    const grouped = Object.values(groups).sort((a, b) =>
+    return Object.values(groups).sort((a, b) => 
       new Date(b.created_at) - new Date(a.created_at)
     );
+  }, [posts]);
 
-    setGroupedPosts(grouped);
-  };
+  // Memoized filtered posts
+  const filteredPosts = useMemo(() => {
+    if (!searchTerm) return groupedPosts;
+    
+    return groupedPosts.filter(group =>
+      group.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      group.pages.some(page => 
+        page.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        page.platform?.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    );
+  }, [groupedPosts, searchTerm]);
 
-  const handleDelete = async (id) => {
+  const handleDelete = useCallback(async (id) => {
     if (!window.confirm('Bạn có chắc muốn xóa bài viết này?')) return;
+    
+    try {
+      await postService.delete(id);
+      toast.success('Xóa bài viết thành công');
+      fetchPosts();
+    } catch (error) {
+      toast.error('Không thể xóa bài viết');
+    }
+  }, [fetchPosts]);
 
+  const getStatusBadge = useCallback((status) => {
+    const variants = {
+      draft: 'default',
+      scheduled: 'warning',
+      published: 'success',
+      failed: 'danger',
+      archived: 'default',
+    };
+    return <Badge variant={variants[status]}>{POST_STATUS[status]}</Badge>;
+  }, []);
+    if (!window.confirm('Bạn có chắc muốn xóa bài viết này?')) return;
+    
     try {
       await postService.delete(id);
       toast.success('Xóa bài viết thành công');
@@ -117,11 +146,7 @@ const PostListPage = () => {
       archived: 'default',
     };
     return <Badge variant={variants[status]}>{POST_STATUS[status]}</Badge>;
-  };
-
-  const filteredPosts = groupedPosts.filter(group =>
-    group.content.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  }, []);
 
   if (loading) return <Loading fullScreen />;
 
@@ -178,9 +203,9 @@ const PostListPage = () => {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredPosts.map((group) => (
-                <tr
-                  key={group.id}
-                  className="hover:bg-blue-50 cursor-pointer transition-colors"
+                <tr 
+                  key={group.id} 
+                  className="hover:bg-blue-50 cursor-pointer transition-colors" 
                   onClick={() => navigate(`/posts/${group.id}`)}
                 >
                   <td className="px-6 py-4">
@@ -304,6 +329,6 @@ const PostListPage = () => {
       </Card>
     </div>
   );
-};
+});
 
 export default PostListPage;

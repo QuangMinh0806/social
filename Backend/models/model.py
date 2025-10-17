@@ -117,6 +117,7 @@ class Page(Base, TimestampMixin):
     page_url = Column(String(255), nullable=True)
     avatar_url = Column(String(255), nullable=True)
     access_token = Column(Text, nullable=True)
+    refresh_token = Column(Text, nullable=True)
     token_expires_at = Column(DateTime, nullable=True)
     status = Column(SQLEnum(PageStatus), default=PageStatus.connected, nullable=False)
     follower_count = Column(Integer, default=0, nullable=False)

@@ -551,7 +551,7 @@ class PostService:
         Args:
             post: Post object
             page: Page object với thông tin YouTube channel
-            media_files: Danh sách file data (bytes)
+            media_files: Danh sách file data (bytes) - video được upload từ máy
             media_type: Loại media ('video')
         """
         try:
@@ -561,9 +561,10 @@ class PostService:
             
             # YouTube chỉ hỗ trợ video
             if media_type != "video" or not media_files or len(media_files) == 0:
+                print(f"⚠️ YouTube posting cho post {post.id} yêu cầu video file")
                 await self.update(post.id, {
                     "status": "failed",
-                    "error_message": "YouTube only supports video posts",
+                    "error_message": "YouTube only supports video posts. Please upload a video file.",
                     "retry_count": post.retry_count + 1
                 })
                 return
@@ -572,22 +573,34 @@ class PostService:
             # Lưu video vào temp file
             temp_file = None
             try:
-                # Tạo temp file
-                temp_fd, temp_path = tempfile.mkstemp(suffix=".mp4")
+                # Tạo temp file với extension .mp4
+                temp_fd, temp_path = tempfile.mkstemp(suffix=".mp4", prefix="youtube_upload_")
                 os.write(temp_fd, media_files[0])
                 os.close(temp_fd)
                 temp_file = temp_path
                 
-                # Upload lên YouTube
+                print(f"📹 Đang upload video lên YouTube cho post {post.id}...")
+                print(f"   Video size: {len(media_files[0])} bytes")
+                print(f"   Temp file: {temp_file}")
+                
+                # Extract hashtags từ content nếu có
+                tags = []
+                if post.content:
+                    import re
+                    hashtags = re.findall(r'#(\w+)', post.content)
+                    tags = hashtags[:10] if hashtags else []  # YouTube limit 10 tags
+                
+                # Upload lên YouTube với refresh_token
                 youtube_service = YouTubeService()
                 result = youtube_service.upload_video(
                     access_token=page.access_token,
+                    refresh_token=page.refresh_token,  # Thêm refresh_token
                     file_path=temp_file,
-                    title=post.title or f"Video - {datetime.utcnow().strftime('%Y-%m-%d')}",
-                    description=post.content,
-                    tags=None,  # TODO: Extract hashtags from content
-                    category_id=22,  # 22 = People & Blogs
-                    privacy_status="public"  # TODO: Make configurable
+                    title=post.title or f"Video - {datetime.utcnow().strftime('%Y-%m-%d %H:%M')}",
+                    description=post.content or "",
+                    tags=tags if tags else None,
+                    category_id=22,  # 22 = People & Blogs (có thể customize)
+                    privacy_status="public"  # public/unlisted/private (có thể customize)
                 )
                 
                 if result.get("success"):
@@ -603,21 +616,29 @@ class PostService:
                         "error_message": None
                     })
                     
-                    print(f"✅ Post {post.id} đã đăng thành công lên YouTube '{page.page_name}': {youtube_url}")
+                    print(f"✅ Post {post.id} đã đăng thành công lên YouTube '{page.page_name}'")
+                    print(f"   Video ID: {video_id}")
+                    print(f"   URL: {youtube_url}")
+                    if tags:
+                        print(f"   Tags: {', '.join(tags)}")
                 else:
                     # Upload thất bại
                     error_msg = result.get("message", "Unknown error")
                     await self.update(post.id, {
                         "status": "failed",
-                        "error_message": f"YouTube error: {error_msg}",
+                        "error_message": f"YouTube upload error: {error_msg}",
                         "retry_count": post.retry_count + 1
                     })
                     print(f"❌ Post {post.id} upload lên YouTube '{page.page_name}' thất bại: {error_msg}")
                 
             finally:
-                # Xóa temp file
+                # Xóa temp file sau khi upload xong
                 if temp_file and os.path.exists(temp_file):
-                    os.remove(temp_file)
+                    try:
+                        os.remove(temp_file)
+                        print(f"🗑️  Đã xóa temp file: {temp_file}")
+                    except Exception as cleanup_error:
+                        print(f"⚠️  Không thể xóa temp file {temp_file}: {cleanup_error}")
             
         except Exception as e:
             error_msg = str(e)

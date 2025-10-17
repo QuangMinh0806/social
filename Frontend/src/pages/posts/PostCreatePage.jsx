@@ -135,7 +135,7 @@ const PostCreatePage = () => {
         const formDataToSend = new FormData();
 
         // Thêm các field bắt buộc
-        formDataToSend.append('user_id', 13); // TODO: Get from auth
+        formDataToSend.append('user_id', 1); // TODO: Get from auth
         formDataToSend.append('page_id', pageId);
         formDataToSend.append('content', formData.content);
         formDataToSend.append('status', publishType === 'now' ? 'published' : 'scheduled');

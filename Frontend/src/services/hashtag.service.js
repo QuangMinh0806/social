@@ -1,6 +1,5 @@
 import apiClient from './api.service';
 import { API_ENDPOINTS } from '../config/api.config';
-
 export const hashtagService = {
   async getAll(params = {}) {
     const { skip = 0, limit = 100 } = params;

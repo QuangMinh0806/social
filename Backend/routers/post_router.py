@@ -116,6 +116,9 @@ async def create_post(
     scheduled_at: Optional[str] = Form(None),
     video_url: Optional[str] = Form(None),  # Video URL từ thư viện
     media_urls: List[str] = Form(None),  # URLs cho Instagram (mỗi dòng 1 URL)
+    image_frame_template_id: Optional[int] = Form(None),  # ID của frame cho ảnh
+    video_frame_template_id: Optional[int] = Form(None),  # ID của frame cho video
+    watermark_template_id: Optional[int] = Form(None),  # ID của watermark
     files: List[UploadFile] = File(None),
     db: AsyncSession = Depends(get_db)
 ):
@@ -131,6 +134,9 @@ async def create_post(
     print(f"  - media_urls (raw): {media_urls}")
     print(f"  - files: {files}")
     print(f"  - video_url: {video_url}")
+    print(f"  - image_frame_template_id: {image_frame_template_id}")
+    print(f"  - video_frame_template_id: {video_frame_template_id}")
+    print(f"  - watermark_template_id: {watermark_template_id}")
     
     # Đọc file data từ uploads hoặc sử dụng video URL
     media_files = []
@@ -162,6 +168,9 @@ async def create_post(
         "media_urls": media_url_list,  # Truyền URLs (cho Instagram)
         "template_id": template_id,
         "title": title,
+        "image_frame_template_id": image_frame_template_id,
+        "video_frame_template_id": video_frame_template_id,
+        "watermark_template_id": watermark_template_id,
     }
     
     if scheduled_at:

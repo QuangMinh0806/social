@@ -17,23 +17,23 @@ export const API_ENDPOINTS = {
     CHANGE_USER_PASSWORD: (id) => `/api/users/${id}/change-password`,
 
     // Platforms
-    PLATFORMS: '/platforms',
-    PLATFORM_BY_ID: (id) => `/platforms/${id}`,
-    ACTIVE_PLATFORMS: '/platforms/active',
+    PLATFORMS: '/api/platforms',
+    PLATFORM_BY_ID: (id) => `/api/platforms/${id}`,
+    ACTIVE_PLATFORMS: '/api/platforms/active',
 
     // Pages
     PAGES: '/pages',
-    PAGE_BY_ID: (id) => `/pages/${id}`,
-    PAGE_BY_USER: (userId) => `/pages/user/${userId}`,
-    PAGE_BY_PLATFORM: (platformId) => `/pages/platform/${platformId}`,
-    UPDATE_PAGE_TOKEN: (id) => `/pages/${id}/token`,
-    SYNC_FOLLOWERS: (id) => `/pages/${id}/sync-followers`,
+    PAGE_BY_ID: (id) => `/api/pages/${id}`,
+    PAGE_BY_USER: (userId) => `/api/pages/user/${userId}`,
+    PAGE_BY_PLATFORM: (platformId) => `/api/pages/platform/${platformId}`,
+    UPDATE_PAGE_TOKEN: (id) => `/api/pages/${id}/token`,
+    SYNC_FOLLOWERS: (id) => `/api/pages/${id}/sync-followers`,
 
     // Page Permissions
-    PAGE_PERMISSIONS: '/page-permissions',
-    PERMISSION_BY_ID: (id) => `/page-permissions/${id}`,
-    USER_PAGES: (userId) => `/page-permissions/user/${userId}`,
-    CHECK_PERMISSION: (userId, pageId) => `/page-permissions/check/${userId}/${pageId}`,
+    PAGE_PERMISSIONS: '/api/page-permissions',
+    PERMISSION_BY_ID: (id) => `/api/page-permissions/${id}`,
+    USER_PAGES: (userId) => `/api/page-permissions/user/${userId}`,
+    CHECK_PERMISSION: (userId, pageId) => `/api/page-permissions/check/${userId}/${pageId}`,
 
     // Templates
     TEMPLATES: '/templates',

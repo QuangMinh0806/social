@@ -205,6 +205,11 @@ const TemplateEditPage = () => {
       return;
     }
 
+    if (!formData.category.trim()) {
+      toast.error('Vui lòng chọn danh mục');
+      return;
+    }
+
     try {
       setSaving(true);
       
@@ -276,47 +281,32 @@ const TemplateEditPage = () => {
       case 'hashtag':
         return (
           <div className="space-y-4">
-            <div className="flex gap-2">
-              <Input
-                label="Thêm hashtag"
-                value={hashtagInput}
-                onChange={(e) => setHashtagInput(e.target.value)}
-                onKeyPress={handleHashtagKeyPress}
-                placeholder="Nhập hashtag (không cần dấu #)"
-              />
-              <Button
-                type="button"
-                variant="primary"
-                icon={<Plus size={18} />}
-                onClick={addHashtag}
-                className="mt-6"
-              >
-                Thêm
-              </Button>
-            </div>
-
-            {formData.hashtags.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {formData.hashtags.map((tag, index) => (
-                  <span
-                    key={index}
-                    className="inline-flex items-center gap-1 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm"
-                  >
-                    {tag.startsWith('#') ? tag : `#${tag}`}
-                    <button
-                      type="button"
-                      onClick={() => removeHashtag(tag)}
-                      className="hover:text-purple-900"
-                    >
-                      <X size={14} />
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
+            <Textarea
+              label="Nội dung Hashtags"
+              name="hashtags"
+              value={Array.isArray(formData.hashtags) ? formData.hashtags.join(' ') : formData.hashtags || ''}
+              onChange={handleChange}
+              placeholder="Nhập hashtags cách nhau bởi dấu cách (ví dụ: #marketing #sale #2024)"
+              rows={8}
+            />
+            <p className="text-sm text-gray-500">
+              💡 Gợi ý: Nhập các hashtag cách nhau bởi dấu cách, không cần dấu # (sẽ tự động thêm)
+            </p>
             
-            {formData.hashtags.length === 0 && (
-              <p className="text-sm text-gray-400 italic">Chưa có hashtag nào</p>
+            {formData.hashtags && Array.isArray(formData.hashtags) && formData.hashtags.length > 0 && (
+              <div className="bg-green-50 p-3 rounded border border-green-200">
+                <p className="text-xs text-green-600 font-medium mb-2">Hashtags hiện tại:</p>
+                <div className="flex flex-wrap gap-2">
+                  {formData.hashtags.map((tag, index) => (
+                    <span
+                      key={index}
+                      className="inline-flex items-center gap-1 px-3 py-1 bg-green-200 text-green-800 rounded-full text-sm"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
         );
@@ -329,13 +319,14 @@ const TemplateEditPage = () => {
               name="watermark_position"
               value={formData.watermark_position}
               onChange={handleChange}
-            >
-              <option value="top-left">Góc trên trái</option>
-              <option value="top-right">Góc trên phải</option>
-              <option value="bottom-left">Góc dưới trái</option>
-              <option value="bottom-right">Góc dưới phải</option>
-              <option value="center">Giữa</option>
-            </Select>
+              options={[
+                { value: 'top-left', label: 'Góc trên trái' },
+                { value: 'top-right', label: 'Góc trên phải' },
+                { value: 'bottom-left', label: 'Góc dưới trái' },
+                { value: 'bottom-right', label: 'Góc dưới phải' },
+                { value: 'center', label: 'Giữa' }
+              ]}
+            />
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Độ trong suốt: {formData.watermark_opacity}
@@ -353,26 +344,20 @@ const TemplateEditPage = () => {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Upload hình watermark
+                Hình watermark hiện tại
               </label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => handleFileUpload(e, 'watermark_image_url')}
-                className="block w-full text-sm text-gray-500
-                  file:mr-4 file:py-2 file:px-4
-                  file:rounded-full file:border-0
-                  file:text-sm file:font-semibold
-                  file:bg-blue-50 file:text-blue-700
-                  hover:file:bg-blue-100"
-              />
               {formData.watermark_image_url && (
-                <img 
-                  src={formData.watermark_image_url} 
-                  alt="Preview" 
-                  className="mt-2 max-w-xs rounded"
-                />
+                <div className="mb-3">
+                  <img 
+                    src={formData.watermark_image_url} 
+                    alt="Current Watermark" 
+                    className="max-w-xs rounded border shadow-sm"
+                  />
+                </div>
               )}
+              <p className="text-sm text-gray-500 mb-2">
+                💡 Lưu ý: Hiện tại chức năng upload ảnh mới chưa được hỗ trợ trong trang chỉnh sửa
+              </p>
             </div>
           </div>
         );
@@ -382,74 +367,44 @@ const TemplateEditPage = () => {
         return (
           <div className="space-y-4">
             <Select
-              label="Loại Frame"
-              name="frame_type"
-              value={formData.frame_type}
-              onChange={handleChange}
-            >
-              <option value="">-- Chọn loại frame --</option>
-              <option value={activeTab === 'video_frame' ? 'Frame Video (cho video posts)' : 'Frame Hình ảnh'}>
-                {activeTab === 'video_frame' ? 'Frame Video (cho video posts)' : 'Frame Hình ảnh'}
-              </option>
-            </Select>
-            <Select
-              label="Aspect Ratio"
+              label="Aspect Ratio *"
               name="aspect_ratio"
               value={formData.aspect_ratio}
               onChange={handleChange}
-            >
-              <option value="">-- Chọn aspect ratio --</option>
-              <option value="1:1">Vuông (1:1) - Instagram, Facebook</option>
-              <option value="9:16">Dọc (9:16) - Instagram Stories, TikTok</option>
-              <option value="16:9">Ngang (16:9) - YouTube, Facebook Video</option>
-              <option value="4:5">4:5 - Instagram Feed</option>
-            </Select>
+              placeholder="-- Chọn tỷ lệ khung hình --"
+              required
+              options={[
+                { value: '1:1', label: 'Vuông (1:1)' },
+                { value: '9:16', label: 'Dọc (9:16)' },
+                { value: '16:9', label: 'Ngang (16:9)' },
+                { value: '4:5', label: '4:5' }
+              ]}
+            />
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Upload Frame Image
+                Ảnh khung hiện tại
               </label>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => handleFileUpload(e, 'frame_image_url')}
-                  className="hidden"
-                  id="frame-upload"
-                />
-                <label htmlFor="frame-upload" className="cursor-pointer">
-                  <div className="text-gray-400 mb-2">
-                    <svg className="mx-auto h-12 w-12" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                      <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </div>
-                  <p className="text-sm text-gray-600">Click hoặc kéo thả frame image vào đây</p>
-                  <p className="text-xs text-gray-500 mt-1">Khuyến dùng PNG với background trong suốt</p>
-                  <p className="text-xs text-gray-500">Kích thước tối thiểu: 1080x1080px</p>
-                  <Button type="button" variant="primary" className="mt-4">
-                    Chọn Frame
-                  </Button>
-                </label>
-              </div>
               {formData.frame_image_url && (
-                <div className="mt-4">
-                  <p className="text-sm font-medium text-gray-700 mb-2">Preview Frame:</p>
+                <div className="mb-3 border-2 border-gray-200 rounded-lg p-4 bg-gray-50">
                   <img 
                     src={formData.frame_image_url} 
-                    alt="Frame Preview" 
-                    className="max-w-md rounded border"
+                    alt="Current Frame" 
+                    className="max-w-md mx-auto rounded border shadow-sm"
                   />
                 </div>
               )}
+              <p className="text-sm text-gray-500 mb-2">
+                💡 Lưu ý: Hiện tại chức năng upload ảnh mới chưa được hỗ trợ trong trang chỉnh sửa
+              </p>
             </div>
             <div className="bg-blue-50 border border-blue-200 rounded p-4">
               <p className="text-sm text-blue-800">
-                <strong>Hướng dẫn tạo Frame:</strong>
+                <strong>Hướng dẫn:</strong>
               </p>
               <ul className="text-sm text-blue-700 mt-2 space-y-1 list-disc list-inside">
-                <li>Frame Video: Dùng cho các bài đăng video, nền có khoảng trong suốt ở giữa</li>
-                <li>Frame Hình ảnh: Dùng cho bài đăng hình ảnh thông thường</li>
-                <li>Khuyến dùng PNG với background trong suốt</li>
-                <li>Kích thước tối thiểu: 1080x1080px</li>
+                <li>{activeTab === 'video_frame' ? 'Khung Video: Dùng cho các bài đăng video' : 'Khung Ảnh: Dùng cho bài đăng hình ảnh'}</li>
+                <li>Sử dụng file PNG với nền trong suốt để có hiệu quả tốt nhất</li>
+                <li>Đảm bảo kích thước phù hợp với tỷ lệ khung hình đã chọn</li>
               </ul>
             </div>
           </div>
@@ -506,12 +461,31 @@ const TemplateEditPage = () => {
               placeholder="Nhập tên template"
               required
             />
-            <Input
-              label="Danh mục"
+            <Select
+              label="Danh mục *"
               name="category"
               value={formData.category}
               onChange={handleChange}
-              placeholder="Ví dụ: Marketing, Sự kiện"
+              placeholder="-- Chọn danh mục --"
+              required
+              options={[
+                { value: 'Sản phẩm', label: 'Sản phẩm' },
+                { value: 'Dịch vụ', label: 'Dịch vụ' },
+                { value: 'Khuyến mãi', label: 'Khuyến mãi' },
+                { value: 'Sự kiện', label: 'Sự kiện' },
+                { value: 'Thời trang', label: 'Thời trang' },
+                { value: 'Ẩm thực', label: 'Ẩm thực' },
+                { value: 'Du lịch', label: 'Du lịch' },
+                { value: 'Công nghệ', label: 'Công nghệ' }
+              ]}
+            />
+            <Textarea
+              label="Mô tả"
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              placeholder="Mô tả ngắn gọn về template này"
+              rows={3}
             />
             <label className="flex items-center gap-2 cursor-pointer">
               <input

@@ -2,6 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, delete
 from sqlalchemy.orm import selectinload
 import sys
+import os
 sys.path.append('..')
 from models.model import Post, PostAnalytics, Page, User, Template, Platform
 from typing import List, Optional, Dict
@@ -11,6 +12,7 @@ from services.instagram_service import post_to_instagram
 from services.tiktok_service import post_to_tiktok
 from services.threads_service import post_to_threads
 from services.youtube_service import YouTubeService
+from services.image_processing_service import ImageProcessingService
 
 
 class PostService:
@@ -153,11 +155,27 @@ class PostService:
                 - media_urls: List[str] (optional) - URLs công khai cho Instagram
                 - media_type: str (optional, 'image' or 'video')
                 - scheduled_at: datetime (optional)
+                - image_frame_template_id: int (optional) - ID của frame cho ảnh
+                - video_frame_template_id: int (optional) - ID của frame cho video
+                - watermark_template_id: int (optional) - ID của watermark
         """
-        # Extract media info trước khi tạo post
+        # Extract media info và template IDs trước khi tạo post
         media_files = data.pop('media_files', [])
         media_urls = data.pop('media_urls', [])  # URLs cho Instagram
         media_type = data.pop('media_type', 'image')
+        image_frame_template_id = data.pop('image_frame_template_id', None)
+        video_frame_template_id = data.pop('video_frame_template_id', None)
+        watermark_template_id = data.pop('watermark_template_id', None)
+        
+        # Xử lý ghép frame/watermark vào media nếu có
+        if media_files and (image_frame_template_id or video_frame_template_id or watermark_template_id):
+            media_files = await self._apply_templates_to_media(
+                media_files,
+                media_type,
+                image_frame_template_id,
+                video_frame_template_id,
+                watermark_template_id
+            )
         
         # Tạo post trong database
         post = Post(**data)
@@ -170,6 +188,138 @@ class PostService:
             await self._publish_to_platform(post, media_files, media_type, media_urls)
         
         return self._to_dict(post)
+    
+    async def _apply_templates_to_media(
+        self,
+        media_files: List[bytes],
+        media_type: str,
+        image_frame_template_id: Optional[int],
+        video_frame_template_id: Optional[int],
+        watermark_template_id: Optional[int]
+    ) -> List[bytes]:
+        """
+        Áp dụng frame hoặc watermark vào media files
+        
+        Args:
+            media_files: Danh sách file data (bytes)
+            media_type: 'image' hoặc 'video'
+            image_frame_template_id: ID của frame template cho ảnh
+            video_frame_template_id: ID của frame template cho video
+            watermark_template_id: ID của watermark template
+            
+        Returns:
+            Danh sách media files đã được xử lý
+        """
+        try:
+            processed_files = []
+            
+            # Lấy thông tin template từ database nếu có
+            template_to_use = None
+            if media_type == 'image' and image_frame_template_id:
+                template_to_use = await self._get_template_by_id(image_frame_template_id)
+            elif media_type == 'video' and video_frame_template_id:
+                template_to_use = await self._get_template_by_id(video_frame_template_id)
+            elif watermark_template_id:
+                template_to_use = await self._get_template_by_id(watermark_template_id)
+            
+            if not template_to_use:
+                print("ℹ️ No template to apply, returning original media")
+                return media_files
+            
+            print(f"🎨 Applying template '{template_to_use.get('name')}' to {len(media_files)} media file(s)")
+            
+            # Xử lý từng file
+            for idx, file_data in enumerate(media_files):
+                try:
+                    if media_type == 'image':
+                        # Xử lý ảnh
+                        frame_url = template_to_use.get('frame_image_url') if image_frame_template_id else None
+                        watermark_url = template_to_use.get('watermark_image_url') if watermark_template_id else None
+                        
+                        processed_data = ImageProcessingService.process_image_with_template(
+                            content_image_data=file_data,
+                            frame_url=frame_url,
+                            watermark_url=watermark_url,
+                            watermark_position=template_to_use.get('watermark_position', 'bottom-right'),
+                            watermark_opacity=template_to_use.get('watermark_opacity', 0.8),
+                            aspect_ratio=template_to_use.get('aspect_ratio')
+                        )
+                        processed_files.append(processed_data)
+                        print(f"  ✅ Processed image {idx + 1}/{len(media_files)}")
+                    
+                    elif media_type == 'video':
+                        # Xử lý video (cần lưu tạm file)
+                        import tempfile
+                        import os
+                        
+                        # Lưu video gốc vào file tạm
+                        temp_input = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4')
+                        temp_input.write(file_data)
+                        temp_input.close()
+                        
+                        # Áp dụng frame
+                        frame_url = template_to_use.get('frame_image_url')
+                        if frame_url:
+                            output_path = ImageProcessingService.apply_frame_to_video(
+                                video_path=temp_input.name,
+                                frame_url=frame_url,
+                                aspect_ratio=template_to_use.get('aspect_ratio')
+                            )
+                            
+                            # Đọc video đã xử lý
+                            with open(output_path, 'rb') as f:
+                                processed_data = f.read()
+                            
+                            processed_files.append(processed_data)
+                            
+                            # Xóa file tạm
+                            os.unlink(output_path)
+                            print(f"  ✅ Processed video {idx + 1}/{len(media_files)}")
+                        else:
+                            processed_files.append(file_data)
+                        
+                        # Xóa file input tạm
+                        os.unlink(temp_input.name)
+                    
+                    else:
+                        # Không xử lý, giữ nguyên
+                        processed_files.append(file_data)
+                
+                except Exception as e:
+                    print(f"  ⚠️ Error processing media {idx + 1}: {str(e)}")
+                    # Nếu lỗi, giữ file gốc
+                    processed_files.append(file_data)
+            
+            return processed_files
+        
+        except Exception as e:
+            print(f"❌ Error in _apply_templates_to_media: {str(e)}")
+            # Nếu có lỗi, trả về media gốc
+            return media_files
+    
+    async def _get_template_by_id(self, template_id: int) -> Optional[Dict]:
+        """Lấy thông tin template từ database"""
+        try:
+            query = select(Template).where(Template.id == template_id)
+            result = await self.db.execute(query)
+            template = result.scalar_one_or_none()
+            
+            if not template:
+                return None
+            
+            return {
+                'id': template.id,
+                'name': template.name,
+                'template_type': template.template_type.value if hasattr(template.template_type, 'value') else template.template_type,
+                'frame_image_url': template.frame_image_url,
+                'watermark_image_url': template.watermark_image_url,
+                'watermark_position': template.watermark_position,
+                'watermark_opacity': template.watermark_opacity,
+                'aspect_ratio': template.aspect_ratio
+            }
+        except Exception as e:
+            print(f"Error getting template {template_id}: {str(e)}")
+            return None
     
     async def _publish_to_platform(self, post: Post, media_files: List[bytes], media_type: str, media_urls: List[str] = []):
         """
@@ -485,7 +635,7 @@ class PostService:
         Args:
             post: Post object
             page: Page object với thông tin TikTok account
-            media_files: Danh sách file data (bytes)
+            media_files: Danh sách file data (bytes) hoặc URL
             media_type: Loại media (TikTok chỉ hỗ trợ 'video')
         """
         try:
@@ -498,37 +648,86 @@ class PostService:
                 })
                 return
             
+            # Get video data (bytes hoặc download từ URL)
+            video_data = media_files[0]
+            
+            # Nếu là string URL, download video
+            if isinstance(video_data, str):
+                print(f"📥 Downloading video from URL for TikTok: {video_data}")
+                try:
+                    import requests
+                    # Check if localhost URL
+                    if 'localhost' in video_data or '127.0.0.1' in video_data:
+                        # Read from disk
+                        from services.image_utils import get_absolute_path_from_url, normalize_url
+                        video_data = normalize_url(video_data)
+                        file_path = get_absolute_path_from_url(video_data)
+                        if file_path and os.path.exists(file_path):
+                            print(f"   ✅ Reading from disk: {file_path}")
+                            with open(file_path, 'rb') as f:
+                                video_data = f.read()
+                        else:
+                            raise Exception(f"Video file not found at: {file_path}")
+                    else:
+                        # Download from external URL
+                        response = requests.get(video_data, timeout=60)
+                        response.raise_for_status()
+                        video_data = response.content
+                        print(f"   ✅ Downloaded video: {len(video_data)} bytes")
+                except Exception as e:
+                    await self.update(post.id, {
+                        "status": "failed",
+                        "error_message": f"Failed to download video: {str(e)}",
+                        "retry_count": post.retry_count + 1
+                    })
+                    print(f"❌ Failed to download video from URL: {str(e)}")
+                    return
+            
             # Đăng video lên TikTok
             result = await post_to_tiktok(
                 access_token=page.access_token,
-                video_file=media_files[0],
-                title=post.title or "",
+                video_file=video_data,
+                title=post.title or "Video from Social Media Manager",  # ✅ Default title for sandbox
                 description=post.content,
-                privacy_level="PUBLIC_TO_EVERYONE"  # TODO: Make configurable
+                privacy_level="SELF_ONLY"  # ✅ Sandbox mode: only post to private (self only)
             )
             
             if result.get("success"):
                 # TikTok trả về publish_id, cần check status sau
                 publish_id = result.get("publish_id")
                 
-                await self.update(post.id, {
-                    "status": "processing",  # Video đang được xử lý
-                    "platform_post_id": publish_id,
-                    "error_message": None,
-                    "metadata": {
-                        "tiktok_publish_id": publish_id,
-                        "status": "PROCESSING"
-                    }
-                })
-                
-                print(f"🔄 Post {post.id} đang được upload lên TikTok '{page.page_name}' (publish_id: {publish_id})")
+                try:
+                    await self.update(post.id, {
+                        "status": "publishing",  # ✅ Video đang được xử lý (enum: publishing, not processing)
+                        "platform_post_id": publish_id,
+                        "error_message": None,
+                        "post_metadata": {  # ✅ Changed from "metadata" to "post_metadata"
+                            "tiktok_publish_id": publish_id,
+                            "status": "PROCESSING"  # TikTok API status (different from PostStatus enum)
+                        }
+                    })
+                    
+                    print(f"🔄 Post {post.id} đang được upload lên TikTok '{page.page_name}' (publish_id: {publish_id})")
+                except Exception as update_error:
+                    print(f"⚠️ Warning: Failed to update post status after successful upload: {str(update_error)[:200]}")
+                    print(f"   Video uploaded successfully with publish_id: {publish_id}")
                 
                 # TODO: Implement background job để check status và update khi video đã PUBLISHED
                 # Có thể dùng Celery hoặc APScheduler để poll status
                 
             else:
                 # Upload thất bại
-                error_msg = result.get("error", {}).get("message", "Unknown error")
+                error_data = result.get("error", "Unknown error")
+                if isinstance(error_data, dict):
+                    error_msg = error_data.get("message", str(error_data))
+                else:
+                    error_msg = str(error_data)
+                
+                # Include status code if available
+                status_code = result.get("status_code")
+                if status_code:
+                    error_msg = f"[{status_code}] {error_msg}"
+                
                 await self.update(post.id, {
                     "status": "failed",
                     "error_message": f"TikTok error: {error_msg}",
@@ -537,7 +736,7 @@ class PostService:
                 print(f"❌ Post {post.id} upload lên TikTok '{page.page_name}' thất bại: {error_msg}")
             
         except Exception as e:
-            error_msg = str(e)
+            error_msg = str(e)[:500]  # ✅ Truncate để tránh quá dài
             await self.update(post.id, {
                 "status": "failed",
                 "error_message": f"TikTok exception: {error_msg}",
@@ -574,14 +773,49 @@ class PostService:
             # Lưu video vào temp file
             temp_file = None
             try:
+                # Get video data (bytes hoặc download từ URL)
+                video_data = media_files[0]
+                
+                # Nếu là string URL, download video
+                if isinstance(video_data, str):
+                    print(f"📥 Downloading video from URL for YouTube: {video_data}")
+                    try:
+                        import requests
+                        # Check if localhost URL
+                        if 'localhost' in video_data or '127.0.0.1' in video_data:
+                            # Read from disk
+                            from services.image_utils import get_absolute_path_from_url, normalize_url
+                            video_data = normalize_url(video_data)
+                            file_path = get_absolute_path_from_url(video_data)
+                            if file_path and os.path.exists(file_path):
+                                print(f"   ✅ Reading from disk: {file_path}")
+                                with open(file_path, 'rb') as f:
+                                    video_data = f.read()
+                            else:
+                                raise Exception(f"Video file not found at: {file_path}")
+                        else:
+                            # Download from external URL
+                            response = requests.get(video_data, timeout=60)
+                            response.raise_for_status()
+                            video_data = response.content
+                            print(f"   ✅ Downloaded video: {len(video_data)} bytes")
+                    except Exception as e:
+                        await self.update(post.id, {
+                            "status": "failed",
+                            "error_message": f"Failed to download video: {str(e)}",
+                            "retry_count": post.retry_count + 1
+                        })
+                        print(f"❌ Failed to download video from URL: {str(e)}")
+                        return
+                
                 # Tạo temp file với extension .mp4
                 temp_fd, temp_path = tempfile.mkstemp(suffix=".mp4", prefix="youtube_upload_")
-                os.write(temp_fd, media_files[0])
+                os.write(temp_fd, video_data)
                 os.close(temp_fd)
                 temp_file = temp_path
                 
                 print(f"📹 Đang upload video lên YouTube cho post {post.id}...")
-                print(f"   Video size: {len(media_files[0])} bytes")
+                print(f"   Video size: {len(video_data)} bytes")
                 print(f"   Temp file: {temp_file}")
                 
                 # Extract hashtags từ content nếu có

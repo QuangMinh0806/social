@@ -13,6 +13,7 @@ import Select from '../../components/common/Select';
 import Breadcrumb from '../../components/layout/Breadcrumb';
 import LoginWithFb from "../../components/LoginWithFb";
 import ConnectWithYoutube from '../../components/ConnectWithYoutube';
+import ConnectWithTiktok from '../../components/ConnectWithTiktok';
 const PageListPage = () => {
     const [pages, setPages] = useState([]);
     const [platforms, setPlatforms] = useState([]);
@@ -123,6 +124,7 @@ const PageListPage = () => {
     // Statistics by platform
     const platformStats = useMemo(() => {
         const stats = {};
+        console.log(platforms)
         platforms.forEach(platform => {
             const count = pages.filter(page => page.platform_id === platform.id).length;
             stats[platform.id] = {
@@ -185,6 +187,7 @@ const PageListPage = () => {
                 subtitle={`Tổng ${filteredPages.length}/${pages.length} trang`}
                 actions={
                     <div className="flex gap-3">
+                        <ConnectWithTiktok />
                         <ConnectWithYoutube />
                         <LoginWithFb />
                         <Button

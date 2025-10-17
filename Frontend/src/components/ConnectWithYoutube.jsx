@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import axios from 'axios'
-
+import { useAuthStore } from '../stores/authStore'
 const ConnectWithYoutube = ({ userId, pageId, onTokenUpdate }) => {
     const [isConnecting, setIsConnecting] = useState(false)
     const [isConnected, setIsConnected] = useState(false)
@@ -9,7 +9,7 @@ const ConnectWithYoutube = ({ userId, pageId, onTokenUpdate }) => {
     const [accessToken, setAccessToken] = useState('')
     const [currentPage, setCurrentPage] = useState(null)
     const [youtubePlatformId, setYoutubePlatformId] = useState()
-
+    const { user } = useAuthStore()
     const API_BASE_URL = 'http://localhost:8000'
 
     useEffect(() => {
@@ -18,13 +18,13 @@ const ConnectWithYoutube = ({ userId, pageId, onTokenUpdate }) => {
                 const response = await axios.get(`${API_BASE_URL}/api/platforms`)
                 const platforms = response.data.data || response.data
 
-                const youtubePlatform = platforms.find(p =>
+                const youtube = platforms.find(p =>
                     p.name?.toLowerCase().includes('youtube') ||
                     p.platform_name?.toLowerCase().includes('youtube')
                 )
-                console.log('YouTube platform from DB:', youtubePlatform)
+                console.log('YouTube platform from DB:', youtube)
                 if (youtubePlatform) {
-                    setYoutubePlatformId(youtubePlatform.id)
+                    setYoutubePlatformId(youtube.id)
                 } else {
                     console.warn('YouTube platform not found in database. Using default ID: 2')
                 }
@@ -74,7 +74,7 @@ const ConnectWithYoutube = ({ userId, pageId, onTokenUpdate }) => {
 
     const saveTokenToDatabase = async (data) => {
         try {
-            const res = axios.post(`${API_BASE_URL}/api/pages/`, data)
+            const res = axios.post(`${API_BASE_URL}/pages/`, data)
             console.log('🚀 Saving token to database...', res)
         } catch (error) {
             console.error('❌ Lỗi khi lưu token:', error)
@@ -90,7 +90,7 @@ const ConnectWithYoutube = ({ userId, pageId, onTokenUpdate }) => {
 
             console.log('🚀 Bắt đầu kết nối YouTube...')
 
-            const response = await axios.get(`${API_BASE_URL}/api/youtube/connect`)
+            const response = await axios.get(`${API_BASE_URL}/youtube/connect`)
             console.log('YouTube connect response:', response.data)
             if (response.data.success) {
                 const authWindow = window.open(
@@ -123,8 +123,8 @@ const ConnectWithYoutube = ({ userId, pageId, onTokenUpdate }) => {
                             const completePageData = {
                                 ...page_data,
                                 refresh_token: token_info.refresh_token,
-                                platform_id: youtubePlatformId
-                                // created_by: userId
+                                platform_id: 14,
+                                created_by: user.id
                             }
 
                             console.log('💾 Saving complete page data:', completePageData)

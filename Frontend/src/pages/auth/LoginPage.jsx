@@ -153,9 +153,7 @@ const LoginPage = () => {
           <div className="mt-6 p-4 bg-gray-50 rounded-md">
             <h3 className="text-sm font-medium text-gray-700 mb-2">Tài khoản demo:</h3>
             <div className="text-xs text-gray-600 space-y-1">
-              <div><strong>Root:</strong> root / root123</div>
-              <div><strong>Super Admin:</strong> superadmin / super123</div>
-              <div><strong>Admin:</strong> admin / admin123</div>
+              <div><strong>Admin:</strong> admin / 123456</div>
             </div>
           </div>
 

@@ -157,20 +157,14 @@ class PageService:
         if not page:
             return None
         
-        # Get platform info if available
+        # Không access relationship để tránh lazy load trigger
+        # Platform info sẽ được fetch riêng nếu cần
         platform_data = None
-        if hasattr(page, 'platform') and page.platform:
-            platform_data = {
-                "id": page.platform.id,
-                "name": page.platform.name,
-                "icon_url": page.platform.icon_url,
-                "is_active": page.platform.is_active
-            }
         
         return {
             "id": page.id,
             "platform_id": page.platform_id,
-            "platform": platform_data,
+            "platform": platform_data,  # None - không lazy load
             "page_id": page.page_id,
             "page_name": page.page_name,
             "page_url": page.page_url,

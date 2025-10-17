@@ -12,7 +12,7 @@ router = APIRouter(prefix="/tiktok", tags=["TikTok"])
 CLIENT_KEY = "sbaw7q53fi2sp7s8lx"
 CLIENT_SECRET = "iXXyqL5mJt1jBUiM2ouFGowv4w6D2ohq"
 
-REDIRECT_URI = "https://2c13d3c9bb1d.ngrok-free.app/tiktok/callback"
+REDIRECT_URI = "https://8a7c47cd4eed.ngrok-free.app/tiktok/callback"
 
 # 1️⃣ Route: Bắt đầu đăng nhập TikTok
 @router.get("/login")
@@ -61,4 +61,3 @@ def tiktok_callback(request: Request, code: str = None, state: str = None):
 
 
 
-{"access_token":"act.pZxxhBm8BaoA0h6K495AtJatY9Nkcj8YZRmRapX6xYnyIJTstAR8YNz8KnGD!6456.va","expires_in":86400,"open_id":"-000aMYOF5olc33XprC7wAK4gNR2ybQHFCO6","refresh_expires_in":31536000,"refresh_token":"rft.Wp2pLqr0iRnXI2mkmsPajDYC5j9bu16iXx3lWl1leW55oIRQ33qvh2LwIaD6!6487.va","scope":"user.info.basic,video.upload,video.publish","token_type":"Bearer"}

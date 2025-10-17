@@ -93,10 +93,10 @@ async def shutdown_event():
 
 
 
-@app.get("/tiktokKz3ZFxrOYv1t3PSMfoZUxZ1KzimgFWoD.txt", response_class=PlainTextResponse)
+@app.get("/tiktokW9T6rjrsiZg0giwWbp9j5SvoZRdWDTAp.txt", response_class=PlainTextResponse)
 def verify_tiktok_file():
 
-    return "tiktok-developers-site-verification=Kz3ZFxrOYv1t3PSMfoZUxZ1KzimgFWoD"
+    return "tiktok-developers-site-verification=W9T6rjrsiZg0giwWbp9j5SvoZRdWDTAp"
 
 @app.get("/")
 async def root():

@@ -77,7 +77,7 @@ export const userService = {
   async createUser(userData) {
     try {
       const response = await api.post(API_ENDPOINTS.CREATE_USER, userData);
-      return { success: true, data: response.data };
+      return { success: true, data: response.data, statusCode: response.status };
     } catch (error) {
       return {
         success: false,

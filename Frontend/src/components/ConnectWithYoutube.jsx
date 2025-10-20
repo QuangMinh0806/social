@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import axios from 'axios'
 import { useAuthStore } from '../stores/authStore'
+import apiClient from '../services/api.service'
 const ConnectWithYoutube = ({ userId, pageId, onTokenUpdate }) => {
     const [isConnecting, setIsConnecting] = useState(false)
     const [isConnected, setIsConnected] = useState(false)
@@ -15,7 +15,7 @@ const ConnectWithYoutube = ({ userId, pageId, onTokenUpdate }) => {
     useEffect(() => {
         const ensureYoutubePlatform = async () => {
             try {
-                const response = await axios.get(`${API_BASE_URL}/api/platforms`)
+                const response = await apiClient.get(`/api/platforms`)
                 const platforms = response.data.data || response.data
 
                 const youtube = platforms.find(p =>
@@ -23,7 +23,7 @@ const ConnectWithYoutube = ({ userId, pageId, onTokenUpdate }) => {
                     p.platform_name?.toLowerCase().includes('youtube')
                 )
                 console.log('YouTube platform from DB:', youtube)
-                if (youtubePlatform) {
+                if (youtube) {
                     setYoutubePlatformId(youtube.id)
                 } else {
                     console.warn('YouTube platform not found in database. Using default ID: 2')
@@ -40,7 +40,7 @@ const ConnectWithYoutube = ({ userId, pageId, onTokenUpdate }) => {
         const loadPageData = async () => {
             try {
                 if (pageId) {
-                    const response = await axios.get(`${API_BASE_URL}/api/pages/${pageId}`)
+                    const response = await apiClient.get(`/api/pages/${pageId}`)
                     const pageData = response.data.data
                     setCurrentPage(pageData)
 
@@ -60,7 +60,7 @@ const ConnectWithYoutube = ({ userId, pageId, onTokenUpdate }) => {
 
     const getChannelInfoFromToken = async (token) => {
         try {
-            const response = await axios.get(`${API_BASE_URL}/youtube/profile`, {
+            const response = await apiClient.get(`/youtube/profile`, {
                 params: { access_token: token }
             })
 
@@ -74,7 +74,7 @@ const ConnectWithYoutube = ({ userId, pageId, onTokenUpdate }) => {
 
     const saveTokenToDatabase = async (data) => {
         try {
-            const res = axios.post(`${API_BASE_URL}/pages/`, data)
+            const res = apiClient.post(`/pages/`, data)
             console.log('🚀 Saving token to database...', res)
         } catch (error) {
             console.error('❌ Lỗi khi lưu token:', error)
@@ -90,11 +90,11 @@ const ConnectWithYoutube = ({ userId, pageId, onTokenUpdate }) => {
 
             console.log('🚀 Bắt đầu kết nối YouTube...')
 
-            const response = await axios.get(`${API_BASE_URL}/youtube/connect`)
-            console.log('YouTube connect response:', response.data)
-            if (response.data.success) {
+            const response = await apiClient.get(`/youtube/connect`)
+            console.log('YouTube connect response:', response)
+            if (response.success) {
                 const authWindow = window.open(
-                    response.data.auth_url,
+                    response.auth_url,
                     'youtube_auth',
                     'width=500,height=600,scrollbars=yes,resizable=yes'
                 )

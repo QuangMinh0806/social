@@ -3,7 +3,6 @@ import { X, Download } from 'lucide-react';
 import Modal from '../common/Modal';
 import Button from '../common/Button';
 import Select from '../common/Select';
-import Input from '../common/Input';
 import Textarea from '../common/Textarea';
 import Checkbox from '../common/Checkbox';
 import toast from 'react-hot-toast';
@@ -80,7 +79,7 @@ const ImportModal = ({ isOpen, onClose, onImportComplete }) => {
 
             // Show results
             if (response.data) {
-                const { imported, failed, errors } = response.data;
+                const { imported = 0, failed = 0, errors } = response.data;
 
                 if (imported > 0) {
                     toast.success(`Import thành công ${imported} video!`);
@@ -91,20 +90,24 @@ const ImportModal = ({ isOpen, onClose, onImportComplete }) => {
                     console.error('Import errors:', errors);
                 }
 
-                // Đóng modal và reset form sau khi import hoàn thành (dù có lỗi hay không)
-                if (imported > 0) {
-                    onImportComplete();
-                }
-
                 // Đánh dấu import đã hoàn thành
                 setImportCompleted(true);
 
-                // Tắt modal ngay sau khi import xong
+                // Notify parent to refresh and await it if it's async so UI updates immediately
+                try {
+                    if (typeof onImportComplete === 'function') {
+                        await onImportComplete();
+                    }
+                } catch (e) {
+                    console.error('onImportComplete error:', e);
+                }
+
+                // Close modal and reset form after a short delay so user sees the toast
                 setTimeout(() => {
                     onClose();
                     resetForm();
                     setImportCompleted(false);
-                }, 1000); // Delay 1 giây để user có thể thấy thông báo
+                }, 800);
             }
         } catch (error) {
             console.error('Import error:', error);

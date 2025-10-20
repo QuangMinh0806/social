@@ -24,11 +24,15 @@ const PageListPage = () => {
     const [filterPlatform, setFilterPlatform] = useState('all');
     const [filterStatus, setFilterStatus] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
+    const [connectType, setConnectType] = useState("");
     const [formData, setFormData] = useState({
         name: '',
         platform_id: '',
         page_id: '',
         access_token: '',
+        refesh_token: '',
+        avatar_url: '',
+        page_url: '',
     });
 
     useEffect(() => {
@@ -123,6 +127,7 @@ const PageListPage = () => {
 
     // Statistics by platform
     const platformStats = useMemo(() => {
+        console.log('Platforms:', platforms);
         const stats = {};
         console.log(platforms)
         platforms.forEach(platform => {
@@ -187,9 +192,6 @@ const PageListPage = () => {
                 subtitle={`Tổng ${filteredPages.length}/${pages.length} trang`}
                 actions={
                     <div className="flex gap-3">
-                        <ConnectWithTiktok />
-                        <ConnectWithYoutube />
-                        <LoginWithFb />
                         <Button
                             icon={<Plus size={20} />}
                             onClick={() => setShowModal(true)}
@@ -293,6 +295,9 @@ const PageListPage = () => {
                                             platform_id: page.platform_id,
                                             page_id: page.page_id,
                                             access_token: page.access_token,
+                                            refesh_token: page.refesh_token,
+                                            avatar_url: page.avatar_url,
+                                            page_url: page.page_url,
                                         });
                                         setShowModal(true);
                                     }}
@@ -334,14 +339,6 @@ const PageListPage = () => {
                 title={editingPage ? 'Chỉnh sửa trang' : 'Thêm trang mới'}
             >
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    <Input
-                        label="Tên trang *"
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        placeholder="Nhập tên trang"
-                        required
-                    />
-
                     <Select
                         label="Nền tảng *"
                         value={formData.platform_id}
@@ -354,40 +351,99 @@ const PageListPage = () => {
                         required
                     />
 
-                    <Input
-                        label="Page ID *"
-                        value={formData.page_id}
-                        onChange={(e) => setFormData({ ...formData, page_id: e.target.value })}
-                        placeholder="Nhập Page ID"
+                    <Select
+                        label="Kiểu kết nối *"
+                        value={connectType}
+                        onChange={(e) => setConnectType(e.target.value)}
+                        placeholder="Chọn kiểu kết nối"
+                        options={[
+                            { value: "manual", label: "Kết nối thủ công" },
+                            { value: "auto", label: "Kết nối trực tiếp" }
+                        ]}
                         required
                     />
 
-                    <Input
-                        label="Access Token"
-                        value={formData.access_token}
-                        onChange={(e) => setFormData({ ...formData, access_token: e.target.value })}
-                        placeholder="Nhập Access Token (tùy chọn)"
-                    />
+                    {connectType === "manual" && (
+                        <>
+                            <Input
+                                label="Tên trang *"
+                                value={formData.name}
+                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                placeholder="Nhập tên trang"
+                                required
+                            />
 
-                    <div className="flex justify-end gap-2 mt-6">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => {
-                                setShowModal(false);
-                                setEditingPage(null);
-                                setFormData({ name: '', platform_id: '', page_id: '', access_token: '' });
-                            }}
-                        >
-                            Hủy
-                        </Button>
-                        <Button
-                            type="submit"
-                            disabled={submitting}
-                        >
-                            {submitting ? 'Đang xử lý...' : (editingPage ? 'Cập nhật' : 'Thêm mới')}
-                        </Button>
-                    </div>
+                            <Input
+                                label="Page ID *"
+                                value={formData.page_id}
+                                onChange={(e) => setFormData({ ...formData, page_id: e.target.value })}
+                                placeholder="Nhập Page ID"
+                                required
+                            />
+
+                            <Input
+                                label="Access Token *"
+                                value={formData.access_token}
+                                onChange={(e) => setFormData({ ...formData, access_token: e.target.value })}
+                                placeholder="Nhập Access Token"
+                            />
+
+                            <Input
+                                label="Refresh Token"
+                                value={formData.access_token}
+                                onChange={(e) => setFormData({ ...formData, refesh_token: e.target.value })}
+                                placeholder="Nhập Refresh Token (tùy chọn)"
+                            />
+
+                            <Input
+                                label="URL trang"
+                                value={formData.name}
+                                onChange={(e) => setFormData({ ...formData, page_url: e.target.value })}
+                                placeholder="Nhập url trang"
+                                required
+                            />
+
+
+                            <Input
+                                label="Avatar_url"
+                                value={formData.name}
+                                onChange={(e) => setFormData({ ...formData, avatar_url: e.target.value })}
+                                placeholder="Nhập avatar_url"
+                                required
+                            />
+                            <div className="flex justify-end gap-2 mt-6">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => {
+                                        setShowModal(false);
+                                        setEditingPage(null);
+                                        setFormData({ name: '', platform_id: '', page_id: '', access_token: '', refesh_token: '', avatar_url: '', page_url: '' });
+                                    }}
+                                >
+                                    Hủy
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    disabled={submitting}
+                                >
+                                    {submitting ? 'Đang xử lý...' : (editingPage ? 'Cập nhật' : 'Thêm mới')}
+                                </Button>
+                            </div>
+                        </>
+                    )}
+
+                    {connectType === "auto" && (
+                        <>
+                            {formData.platform_id == 10 && <LoginWithFb />}
+                            {formData.platform_id == 11 && <LoginWithFb />}
+                            {formData.platform_id == 14 && <ConnectWithYoutube />}
+                            {formData.platform_id == 15 && <ConnectWithTiktok />}
+                        </>
+                    )}
+
+
+
                 </form>
             </Modal>
         </div>

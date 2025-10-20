@@ -113,7 +113,8 @@ export const authService = {
   async createUser(userData) {
     try {
       const response = await api.post(API_ENDPOINTS.CREATE_USER, userData);
-      return { success: true, data: response.data };
+      const statusCode = response.status;
+      return { success: true, data: response.data, statusCode };
     } catch (error) {
       return {
         success: false,

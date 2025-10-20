@@ -85,13 +85,23 @@ async def startup_event():
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
         print("✅ Database tables initialized successfully!")
+        
+        # Start scheduler for scheduled posts
+        from services.scheduler_service import start_scheduler
+        await start_scheduler()
+        print("✅ Scheduler started successfully!")
+        
     except Exception as e:
-        print(f"⚠️ Warning: Could not initialize database: {e}")
+        print(f"⚠️ Warning: Could not initialize database or scheduler: {e}")
 
 
 @app.on_event("shutdown")
 async def shutdown_event():
     """Cleanup on shutdown"""
+    # Stop scheduler
+    from services.scheduler_service import stop_scheduler
+    await stop_scheduler()
+    
     await engine.dispose()
     print("👋 Application shutdown complete")
 

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { userService } from '../../services/userService.js';
 import toast from 'react-hot-toast';
+import { useAuthStore } from '../../stores/authStore.js';
 import {
   FaUsers,
   FaUserCheck,
@@ -123,7 +124,11 @@ const EmployeeListPage = () => {
         toast.success('Cập nhật nhân viên thành công');
       } else {
         // Create
-        await userService.createUser(data);
+        const res = await userService.createUser(data);
+        if (res.statusCode === 400) {
+          toast.error('Tên đăng nhập hoặc email đã tồn tại');
+          return;
+        }
         toast.success('Thêm nhân viên thành công');
       }
       setIsModalOpen(false);
@@ -137,9 +142,9 @@ const EmployeeListPage = () => {
   // Get role badge color
   const getRoleBadgeColor = (role) => {
     const colors = {
-      'Super Admin': 'bg-red-100 text-red-800',
-      'Admin': 'bg-blue-100 text-blue-800',
-      'Root': 'bg-purple-100 text-purple-800',
+      'root': 'bg-purple-100 text-purple-800',
+      'superadmin': 'bg-red-100 text-red-800',
+      'admin': 'bg-blue-100 text-blue-800'
     };
     return colors[role] || 'bg-gray-100 text-gray-800';
   };
@@ -255,9 +260,17 @@ const EmployeeListPage = () => {
               onChange={(e) => setRoleFilter(e.target.value)}
               className="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              <option value="admin">Admin</option>
-              <option value="Super Admin">Super Admin</option>
-              <option value="root">Root</option>
+              <option value="all">Tất cả vai trò</option>
+              {
+                // Use available roles based on current user
+                (useAuthStore.getState().getAvailableRoles?.() || [
+                  { value: 'admin', label: 'Admin' },
+                  { value: 'superadmin', label: 'Super Admin' },
+                  { value: 'root', label: 'Root' }
+                ]).map(r => (
+                  <option key={r.value} value={r.value}>{r.label}</option>
+                ))
+              }
             </select>
           </div>
 
@@ -341,7 +354,7 @@ const EmployeeListPage = () => {
                     </td>
                     <td className="px-6 py-4">
                       <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${getRoleBadgeColor(employee.role)}`}>
-                        {employee.role}
+                        {useAuthStore.getState().getRoleLabel(employee.role)}
                       </span>
                     </td>
                     <td className="px-6 py-4">

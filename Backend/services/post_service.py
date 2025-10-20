@@ -13,6 +13,8 @@ from services.tiktok_service import post_to_tiktok
 from services.threads_service import post_to_threads
 from services.youtube_service import YouTubeService
 from services.image_processing_service import ImageProcessingService
+from services.storage_service import storage_service
+from utils.timezone_utils import format_datetime_gmt7, datetime_to_iso_gmt7
 
 
 class PostService:
@@ -177,11 +179,40 @@ class PostService:
                 watermark_template_id
             )
         
-        # Tạo post trong database
+        # Tạo post trong database trước (để có post_id)
         post = Post(**data)
         self.db.add(post)
         await self.db.commit()
         await self.db.refresh(post)
+        
+        # Lưu media files vào storage cho scheduled posts
+        if post.status.value == 'scheduled' or post.status == 'scheduled':
+            if 'post_metadata' not in data:
+                post.post_metadata = {}
+            else:
+                post.post_metadata = data.get('post_metadata', {})
+            
+            # Lưu media URLs (cho Instagram/Threads)
+            if media_urls:
+                post.post_metadata['media_urls'] = media_urls
+            
+            # Lưu media files vào storage (cho Facebook/TikTok/YouTube)
+            if media_files:
+                try:
+                    saved_paths = await storage_service.save_media_for_post(
+                        post_id=post.id,
+                        media_files=media_files,
+                        media_type=media_type
+                    )
+                    post.post_metadata['media_paths'] = saved_paths
+                    post.post_metadata['media_type'] = media_type
+                    print(f"✅ Saved {len(saved_paths)} media file(s) for scheduled post {post.id}")
+                except Exception as e:
+                    print(f"⚠️ Warning: Could not save media files for scheduled post: {str(e)}")
+            
+            # Update post metadata
+            await self.db.commit()
+            await self.db.refresh(post)
         
         # Nếu status = 'published', đăng lên platform ngay
         if post.status.value == 'published' or post.status == 'published':
@@ -929,15 +960,17 @@ class PostService:
             "content": post.content,
             "post_type": post.post_type.value if hasattr(post.post_type, 'value') else post.post_type,
             "status": post.status.value if hasattr(post.status, 'value') else post.status,
-            "scheduled_at": post.scheduled_at.isoformat() if post.scheduled_at else None,
-            "published_at": post.published_at.isoformat() if post.published_at else None,
+            # Thời gian hiển thị theo GMT+7 cho user
+            "scheduled_at": datetime_to_iso_gmt7(post.scheduled_at) if post.scheduled_at else None,
+            "published_at": datetime_to_iso_gmt7(post.published_at) if post.published_at else None,
+            "created_at": datetime_to_iso_gmt7(post.created_at) if post.created_at else None,
+            "updated_at": datetime_to_iso_gmt7(post.updated_at) if post.updated_at else None,
+            # Metadata
             "platform_post_id": post.platform_post_id,
             "platform_post_url": post.platform_post_url,
             "error_message": post.error_message,
             "retry_count": post.retry_count,
-            "metadata": post.post_metadata if hasattr(post, 'post_metadata') else post.metadata if hasattr(post, 'metadata') else None,
-            "created_at": post.created_at.isoformat() if post.created_at else None,
-            "updated_at": post.updated_at.isoformat() if post.updated_at else None
+            "metadata": post.post_metadata if hasattr(post, 'post_metadata') else post.metadata if hasattr(post, 'metadata') else None
         }
         
         # Add page info if available

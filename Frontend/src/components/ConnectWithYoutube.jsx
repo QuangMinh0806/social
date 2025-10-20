@@ -14,7 +14,7 @@ const ConnectWithYoutube = ({ userId, pageId, onTokenUpdate }) => {
     useEffect(() => {
         const ensureYoutubePlatform = async () => {
             try {
-                const response = await apiClient.get(`/api/platforms`)
+                const response = await apiClient.get(`/platforms`)
                 const platforms = response.data.data || response.data
 
                 const youtube = platforms.find(p =>
@@ -39,7 +39,7 @@ const ConnectWithYoutube = ({ userId, pageId, onTokenUpdate }) => {
         const loadPageData = async () => {
             try {
                 if (pageId) {
-                    const response = await apiClient.get(`/api/pages/${pageId}`)
+                    const response = await apiClient.get(`/pages/${pageId}`)
                     const pageData = response.data.data
                     setCurrentPage(pageData)
 

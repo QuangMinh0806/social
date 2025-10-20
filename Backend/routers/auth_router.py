@@ -21,7 +21,7 @@ from core.schemas import (
 from datetime import timedelta, datetime
 
 router = APIRouter(
-    prefix="/auth",
+    prefix="/api/auth",
     tags=["Authentication"]
 )
 

@@ -7,7 +7,7 @@ from urllib.parse import urlencode
 from config.database import get_db
 from services.page_service import PageService
 
-router = APIRouter(prefix="/tiktok", tags=["TikTok"])
+router = APIRouter(prefix="/api/tiktok", tags=["TikTok"])
 
 # CLIENT_KEY = os.getenv("TIKTOK_CLIENT_KEY")
 # CLIENT_SECRET = os.getenv("TIKTOK_CLIENT_SECRET")

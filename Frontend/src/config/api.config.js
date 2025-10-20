@@ -1,5 +1,5 @@
 // export const API_BASE_URL = 'http://localhost:8000';
-export const API_BASE_URL = 'https://autosocialbe.tmedu.vn';
+export const API_BASE_URL = 'https://autosocial.tmedu.vn/api';
 
 export const API_ENDPOINTS = {
     // Auth - Updated for new authentication system
@@ -10,31 +10,31 @@ export const API_ENDPOINTS = {
     CHANGE_PASSWORD: '/auth/change-password',
 
     // Users - Updated for new user management
-    USERS: '/api/users',
-    USER_BY_ID: (id) => `/api/users/${id}`,
-    CREATE_USER: '/api/users',
-    UPDATE_USER: (id) => `/api/users/${id}`,
-    DELETE_USER: (id) => `/api/users/${id}`,
-    CHANGE_USER_PASSWORD: (id) => `/api/users/${id}/change-password`,
+    USERS: '/users',
+    USER_BY_ID: (id) => `/users/${id}`,
+    CREATE_USER: '/users',
+    UPDATE_USER: (id) => `/users/${id}`,
+    DELETE_USER: (id) => `/users/${id}`,
+    CHANGE_USER_PASSWORD: (id) => `/users/${id}/change-password`,
 
     // Platforms
-    PLATFORMS: '/api/platforms',
-    PLATFORM_BY_ID: (id) => `/api/platforms/${id}`,
-    ACTIVE_PLATFORMS: '/api/platforms/active',
+    PLATFORMS: '/platforms',
+    PLATFORM_BY_ID: (id) => `/platforms/${id}`,
+    ACTIVE_PLATFORMS: '/platforms/active',
 
     // Pages
     PAGES: '/pages',
-    PAGE_BY_ID: (id) => `/api/pages/${id}`,
-    PAGE_BY_USER: (userId) => `/api/pages/user/${userId}`,
-    PAGE_BY_PLATFORM: (platformId) => `/api/pages/platform/${platformId}`,
-    UPDATE_PAGE_TOKEN: (id) => `/api/pages/${id}/token`,
-    SYNC_FOLLOWERS: (id) => `/api/pages/${id}/sync-followers`,
+    PAGE_BY_ID: (id) => `/pages/${id}`,
+    PAGE_BY_USER: (userId) => `/pages/user/${userId}`,
+    PAGE_BY_PLATFORM: (platformId) => `/pages/platform/${platformId}`,
+    UPDATE_PAGE_TOKEN: (id) => `/pages/${id}/token`,
+    SYNC_FOLLOWERS: (id) => `/pages/${id}/sync-followers`,
 
     // Page Permissions
-    PAGE_PERMISSIONS: '/api/page-permissions',
-    PERMISSION_BY_ID: (id) => `/api/page-permissions/${id}`,
-    USER_PAGES: (userId) => `/api/page-permissions/user/${userId}`,
-    CHECK_PERMISSION: (userId, pageId) => `/api/page-permissions/check/${userId}/${pageId}`,
+    PAGE_PERMISSIONS: '/page-permissions',
+    PERMISSION_BY_ID: (id) => `/page-permissions/${id}`,
+    USER_PAGES: (userId) => `/page-permissions/user/${userId}`,
+    CHECK_PERMISSION: (userId, pageId) => `/page-permissions/check/${userId}/${pageId}`,
 
     // Templates
     TEMPLATES: '/templates',

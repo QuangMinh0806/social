@@ -18,7 +18,7 @@ import mimetypes
 load_dotenv()  
 
 URL_BE = os.getenv("URL_BE")
-router = APIRouter(prefix="/media", tags=["Media"])
+router = APIRouter(prefix="/api/media", tags=["Media"])
 
 
 class MediaCreate(BaseModel):

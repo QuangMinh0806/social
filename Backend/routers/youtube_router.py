@@ -12,7 +12,7 @@ from services.youtube_service import YouTubeService
 from pydantic import BaseModel
 from typing import List, Optional
 load_dotenv()
-router = APIRouter(prefix="/youtube", tags=["YouTube"])
+router = APIRouter(prefix="/api/youtube", tags=["YouTube"])
 
 # Initialize services
 youtube_service = YouTubeService()

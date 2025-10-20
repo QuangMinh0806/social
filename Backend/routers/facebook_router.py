@@ -14,7 +14,7 @@ load_dotenv()
 
 URL = os.getenv("URL_BE")
 URL_FE = os.getenv("URL_FE")
-router = APIRouter(prefix="/facebook-pages", tags=["Facebook Pages"])
+router = APIRouter(prefix="/api/facebook-pages", tags=["Facebook Pages"])
 
    
 

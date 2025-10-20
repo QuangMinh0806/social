@@ -5,7 +5,7 @@ from controllers.page_controller import PageController
 from core.auth import get_current_user
 from models.model import User
 
-router = APIRouter(prefix="/pages", tags=["Pages"])
+router = APIRouter(prefix="/api/pages", tags=["Pages"])
 
 
 @router.get("/")

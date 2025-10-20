@@ -9,7 +9,7 @@ from typing import Optional, Dict, Any
 import asyncio
 
 router = APIRouter(
-    prefix="/download",
+    prefix="/api/download",
     tags=["download"],
     responses={404: {"description": "Not found"}},
 )

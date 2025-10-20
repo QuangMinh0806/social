@@ -8,7 +8,7 @@ from datetime import datetime
 from utils.timezone_utils import parse_datetime_from_frontend
 
 
-router = APIRouter(prefix="/posts", tags=["Posts"])
+router = APIRouter(prefix="/api/posts", tags=["Posts"])
 
 
 class PostCreate(BaseModel):

@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from fastapi import HTTPException
 from dotenv import load_dotenv as loadenv
 loadenv()
+URL_FE = os.getenv("URL_FE")
 class YouTubeService:
     def __init__(self):
         # YouTube API endpoints
@@ -16,7 +17,7 @@ class YouTubeService:
         # OAuth settings từ environment variables
         self.client_id = os.getenv("YOUTUBE_CLIENT_ID")
         self.client_secret = os.getenv("YOUTUBE_CLIENT_SECRET")
-        self.redirect_uri = os.getenv("YOUTUBE_REDIRECT_URI", "http://localhost:3000/youtube/callback")
+        self.redirect_uri = os.getenv("YOUTUBE_REDIRECT_URI", f"{URL_FE}/youtube/callback")
         
         # Kiểm tra có đủ config không
         if not self.client_id or not self.client_secret:

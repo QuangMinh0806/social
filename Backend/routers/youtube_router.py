@@ -1,5 +1,6 @@
 import os
 import tempfile
+from dotenv import load_dotenv
 from fastapi.responses import RedirectResponse
 from fastapi import APIRouter, Body, File, Form, Request, HTTPException, UploadFile, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,12 +11,12 @@ import requests
 from services.youtube_service import YouTubeService
 from pydantic import BaseModel
 from typing import List, Optional
-
+load_dotenv()
 router = APIRouter(prefix="/youtube", tags=["YouTube"])
 
 # Initialize services
 youtube_service = YouTubeService()
-
+URL_FE = os.getenv("URL_FE")
 # ==================== REQUEST MODELS ====================
 class YouTubeUploadRequest(BaseModel):
     video_url: str  # URL video để upload
@@ -143,7 +144,7 @@ async def youtube_callback(
             },
             "user_info": user_info,
             "youtube_channels": youtube_channels,
-            "redirect_url": "http://localhost:3000/youtube/callback",
+            "redirect_url": f"{URL_FE}/youtube/callback",
             "notes": {
                 "platform_id": "Frontend needs to fetch YouTube platform ID from /api/platforms?name=YouTube",
                 "created_by": "Frontend needs to set current user ID",

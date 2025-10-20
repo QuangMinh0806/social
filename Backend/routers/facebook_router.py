@@ -13,7 +13,7 @@ import os
 load_dotenv()  
 
 URL = os.getenv("URL_BE")
-URL_FE = os.getenv("URL")
+URL_FE = os.getenv("URL_FE")
 router = APIRouter(prefix="/facebook-pages", tags=["Facebook Pages"])
 
    
@@ -39,7 +39,7 @@ async def facebook_callback(
     
     await facebook_page_controller.facebook_callback_controller(code, db, current_user.id)
 
-    return RedirectResponse(url="http://localhost:3000/pages")
+    return RedirectResponse(url=f"{URL_FE}/pages")
 
 
 # ==================== POST TO FACEBOOK PAGE ====================

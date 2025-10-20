@@ -15,7 +15,7 @@ const apiClient = axios.create({
 apiClient.interceptors.request.use(
   (config) => {
     // Get token from localStorage
-    const token = localStorage.getItem('access_token');
+    const token = localStorage.getItem('auth_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -40,7 +40,7 @@ apiClient.interceptors.response.use(
     // Handle specific status codes
     if (status === 401) {
       // Unauthorized - clear token and redirect to login
-      localStorage.removeItem('access_token');
+      localStorage.removeItem('auth_token');
       localStorage.removeItem('user');
       window.location.href = '/login';
       toast.error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');

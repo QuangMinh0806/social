@@ -11,7 +11,8 @@ load_dotenv()
 
 FB_CLIENT_ID = os.getenv("FB_CLIENT_ID")
 FB_CLIENT_SECRET = os.getenv("FB_CLIENT_SECRET")
-REDIRECT_URI = "http://localhost:8000/facebook-pages/callback"
+URL_BE = os.getenv("URL_BE")
+REDIRECT_URI = f"{URL_BE}/facebook-pages/callback"
 
 
 async def facebook_post_controller(

@@ -1,3 +1,4 @@
+from dotenv import load_dotenv
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.video_downloader_service import VideoDownloaderService
 from controllers.media_controller import MediaController
@@ -6,7 +7,8 @@ from core.exceptions import CustomException
 from pathlib import Path
 import os
 from typing import List, Dict, Any
-
+load_dotenv()  
+URL_BE = os.getenv("URL_BE")
 class VideoImportController:
     def __init__(self, db: AsyncSession):
         self.db = db
@@ -61,7 +63,7 @@ class VideoImportController:
             # Create file URL
             file_path = Path(download_result["file_path"])
             relative_path = file_path.relative_to(Path("uploads"))
-            file_url = f"http://localhost:8000/uploads/{str(relative_path).replace(os.sep, '/')}"
+            file_url = f"{URL_BE}/uploads/{str(relative_path).replace(os.sep, '/')}"
             
             # Create thumbnail URL for video
             thumbnail_url = None  # Có thể tạo thumbnail sau

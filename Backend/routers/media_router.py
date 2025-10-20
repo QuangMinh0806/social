@@ -1,3 +1,4 @@
+from dotenv import load_dotenv
 from fastapi import APIRouter, Depends, Query, UploadFile, File, Form, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from config.database import get_db
@@ -14,7 +15,9 @@ from pathlib import Path
 from PIL import Image
 import mimetypes
 
+load_dotenv()  
 
+URL_BE = os.getenv("URL_BE")
 router = APIRouter(prefix="/media", tags=["Media"])
 
 
@@ -286,10 +289,10 @@ async def upload_media(
     
     if file_type == "image" or file_type == "gif":
         width, height = get_image_dimensions(str(file_path))
-        thumbnail_url = f"http://localhost:8000/uploads/{file_type}/{unique_filename}"
+        thumbnail_url = f"{URL_BE}/uploads/{file_type}/{unique_filename}"
     
     # Tạo URL cho file
-    file_url = f"http://localhost:8000/uploads/{file_type}/{unique_filename}"
+    file_url = f"{URL_BE}/uploads/{file_type}/{unique_filename}"
     
     # Xử lý tags - convert string to None nếu rỗng hoặc 'null'
     processed_tags = None
@@ -385,10 +388,10 @@ async def upload_multiple_media(
             
             if file_type == "image" or file_type == "gif":
                 width, height = get_image_dimensions(str(file_path))
-                thumbnail_url = f"http://localhost:8000/uploads/{file_type}/{unique_filename}"
+                thumbnail_url = f"{URL_BE}/uploads/{file_type}/{unique_filename}"
             
             # Tạo URL cho file
-            file_url = f"http://localhost:8000/uploads/{file_type}/{unique_filename}"
+            file_url = f"{URL_BE}/uploads/{file_type}/{unique_filename}"
             
             # Convert file_type string to MediaType enum
             try:

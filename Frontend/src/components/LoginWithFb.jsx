@@ -1,7 +1,7 @@
-// const FB_APP_ID = "4238615406374117";
 const FB_APP_ID = "1130979465654370";
-// const Url = `https://chatbotbe.a2alab.vn`;
-const Url = `http://localhost:8000`;
+import { API_BASE_URL as Url } from "../config/api.config";
+// const Url = `http://localhost:8000`;
+console.log("API BASE URL:", Url);
 const REDIRECT_URI = `${Url}/facebook-pages/callback`;
 
 const FB_SCOPE = "pages_show_list,pages_manage_metadata,pages_read_engagement,pages_manage_posts,publish_video,pages_messaging,email,instagram_basic,instagram_manage_insights,instagram_content_publish";

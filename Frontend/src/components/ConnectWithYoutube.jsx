@@ -10,7 +10,6 @@ const ConnectWithYoutube = ({ userId, pageId, onTokenUpdate }) => {
     const [currentPage, setCurrentPage] = useState(null)
     const [youtubePlatformId, setYoutubePlatformId] = useState()
     const { user } = useAuthStore()
-    const API_BASE_URL = 'http://localhost:8000'
 
     useEffect(() => {
         const ensureYoutubePlatform = async () => {

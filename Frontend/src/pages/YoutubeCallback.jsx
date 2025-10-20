@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import axios from 'axios'
+import apiClient from '../services/api.service'
 
 const YoutubeCallback = () => {
     const location = useLocation()
@@ -60,7 +61,7 @@ const YoutubeCallback = () => {
                 setMessage('Đang lấy thông tin từ YouTube...')
                 console.log('🚀 Calling YouTube callback API with code:', code)
 
-                const response = await axios.get(`http://localhost:8000/youtube/callback`, {
+                const response = await apiClient.get(`/youtube/callback`, {
                     params: { code, state },
                     headers: {
                         'Authorization': `Bearer ${localStorage.getItem('auth_token')}`, // Nếu cần

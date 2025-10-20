@@ -1,5 +1,5 @@
 // export const API_BASE_URL = 'http://localhost:8000';
-export const API_BASE_URL = 'https://social-automation-social-be.e7cqih.easypanel.host/';
+export const API_BASE_URL = 'https://autosocialbe.tmedu.vn';
 
 export const API_ENDPOINTS = {
     // Auth - Updated for new authentication system

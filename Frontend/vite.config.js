@@ -11,7 +11,7 @@ export default defineConfig({
     ],
     proxy: {
       '/api': {
-        target: 'https://social-automation-social-be.e7cqih.easypanel.host/',
+        target: 'https://autosocialbe.tmedu.vn',
         changeOrigin: true,
       },
     },

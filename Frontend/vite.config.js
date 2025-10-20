@@ -11,7 +11,7 @@ export default defineConfig({
     ],
     proxy: {
       '/api': {
-        target: 'http://localhost:8000',
+        target: 'https://social-automation-social-be.e7cqih.easypanel.host/',
         changeOrigin: true,
       },
     },

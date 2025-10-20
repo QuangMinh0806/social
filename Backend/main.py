@@ -95,16 +95,6 @@ async def startup_event():
         print(f"⚠️ Warning: Could not initialize database or scheduler: {e}")
 
 
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Cleanup on shutdown"""
-    # Stop scheduler
-    from services.scheduler_service import stop_scheduler
-    await stop_scheduler()
-    
-    await engine.dispose()
-    print("👋 Application shutdown complete")
-
 @app.get("/tiktokW9T6rjrsiZg0giwWbp9j5SvoZRdWDTAp.txt", response_class=PlainTextResponse)
 def verify_tiktok_file():
 

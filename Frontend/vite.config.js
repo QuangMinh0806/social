@@ -7,7 +7,7 @@ export default defineConfig({
     port: 3000,
     open: true,
     allowedHosts: [
-      'ardis-nondistracting-cogitatively.ngrok-free.dev', // 👈 Thêm host ngrok vào đây
+      'autosocial.tmedu.vn', // 👈 Thêm host ngrok vào đây
     ],
     proxy: {
       '/api': {

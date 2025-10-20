@@ -42,6 +42,7 @@ export const authService = {
   async login(credentials) {
     try {
       const response = await api.post(API_ENDPOINTS.LOGIN, credentials);
+      console.log('Login response:', API_ENDPOINTS.LOGIN);
       const { access_token, user } = response.data;
       
       // Store token and user info

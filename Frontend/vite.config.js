@@ -11,7 +11,7 @@ export default defineConfig({
     ],
     proxy: {
       '/api': {
-        target: 'https://autosocial.tmedu.vn/api',
+        target: '/api',
         changeOrigin: true,
       },
     },

@@ -7,7 +7,7 @@ const YoutubeCallback = () => {
     const navigate = useNavigate()
     const [status, setStatus] = useState('processing') // processing, success, error
     const [message, setMessage] = useState('Đang xử lý kết nối YouTube...')
-
+    console.log('📍 YoutubeCallback mounted')
     useEffect(() => {
         const handleCallback = async () => {
             try {
@@ -60,8 +60,12 @@ const YoutubeCallback = () => {
                 setMessage('Đang lấy thông tin từ YouTube...')
                 console.log('🚀 Calling YouTube callback API with code:', code)
 
-                const response = await axios.get(`http://localhost:8000/api/youtube/callback`, {
+                const response = await axios.get(`http://localhost:8000/youtube/callback`, {
                     params: { code, state },
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('auth_token')}`, // Nếu cần
+                        'Content-Type': 'application/json'
+                    },
                     timeout: 30000 // 30 seconds timeout
                 })
 

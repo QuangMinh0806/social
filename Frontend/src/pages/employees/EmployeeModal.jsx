@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { FaTimes, FaSave, FaUser, FaEnvelope, FaLock, FaUserTag, FaImage } from 'react-icons/fa';
-
+import { useAuthStore } from '../../stores/authStore.js';
+import RoleSelect from './RoleSelect.jsx';
 const EmployeeModal = ({ isOpen, onClose, onSave, employee }) => {
   const [formData, setFormData] = useState({
     username: '',
@@ -26,13 +27,17 @@ const EmployeeModal = ({ isOpen, onClose, onSave, employee }) => {
         status: employee.status || 'active'
       });
     } else {
+      // Default role should be the first available role for current user
+      const availableRoles = useAuthStore.getState().getAvailableRoles?.() || [];
+      const defaultRole = availableRoles.length ? availableRoles[0].value : 'admin';
+
       setFormData({
         username: '',
         email: '',
         password_hash: '',
         full_name: '',
         avatar_url: '',
-        role: 'admin',
+        role: defaultRole,
         status: 'active'
       });
     }
@@ -204,16 +209,14 @@ const EmployeeModal = ({ isOpen, onClose, onSave, employee }) => {
                 <FaUserTag className="inline mr-2 text-blue-600" />
                 Vai trò <span className="text-red-500">*</span>
               </label>
-              <select
+              {
+                // Build role options based on current user's available roles
+              }
+              <RoleSelect
                 name="role"
                 value={formData.role}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="admin">Admin</option>
-                <option value="Super Admin">Super Admin</option>
-                <option value="root">Root</option>
-              </select>
+              />
             </div>
 
             {/* Status */}

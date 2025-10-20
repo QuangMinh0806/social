@@ -164,9 +164,7 @@ async def register(user_data: RegisterRequest):
 
 @router.get("/me", response_model=UserResponse)
 async def get_current_user_info(current_user: User = Depends(get_current_user)):
-    """
-    Lấy thông tin user hiện tại
-    """
+    print("Current user:", current_user)
     return current_user
 
 

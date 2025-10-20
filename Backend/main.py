@@ -85,55 +85,30 @@ async def startup_event():
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
         print("✅ Database tables initialized successfully!")
+        
+        # Start scheduler for scheduled posts
+        from services.scheduler_service import start_scheduler
+        await start_scheduler()
+        print("✅ Scheduler started successfully!")
+        
     except Exception as e:
-        print(f"⚠️ Warning: Could not initialize database: {e}")
+        print(f"⚠️ Warning: Could not initialize database or scheduler: {e}")
 
 
 @app.on_event("shutdown")
 async def shutdown_event():
     """Cleanup on shutdown"""
+    # Stop scheduler
+    from services.scheduler_service import stop_scheduler
+    await stop_scheduler()
+    
     await engine.dispose()
     print("👋 Application shutdown complete")
 
-
-
-@app.get("/")
-async def root():
-    """API root endpoint with authentication system info"""
-    return {
-        "message": "Social Media Auto Posting API",
-        "version": settings.APP_VERSION,
-        "authentication": "JWT Bearer Token",
-        "roles": ["root", "superadmin", "admin"],
-        "docs": "/docs",
-        "endpoints": {
-            "auth": {
-                "login": "POST /auth/login",
-                "me": "GET /auth/me",
-                "change_password": "POST /auth/change-password",
-                "create_user": "POST /auth/create-user"
-            },
-            "users": {
-                "list": "GET /api/users",
-                "get": "GET /api/users/{id}",
-                "create": "POST /api/users",
-                "update": "PUT /api/users/{id}",
-                "delete": "DELETE /api/users/{id}",
-                "change_password": "POST /api/users/{id}/change-password"
-            }
-        },
-        "setup": {
-            "1": "Run: python setup_root_user.py",
-            "2": "Login with root credentials",
-            "3": "Create additional users via API"
-        }
-    }
-
-
-@app.get("/tiktokKz3ZFxrOYv1t3PSMfoZUxZ1KzimgFWoD.txt", response_class=PlainTextResponse)
+@app.get("/tiktokW9T6rjrsiZg0giwWbp9j5SvoZRdWDTAp.txt", response_class=PlainTextResponse)
 def verify_tiktok_file():
 
-    return "tiktok-developers-site-verification=Kz3ZFxrOYv1t3PSMfoZUxZ1KzimgFWoD"
+    return "tiktok-developers-site-verification=W9T6rjrsiZg0giwWbp9j5SvoZRdWDTAp"
 
 @app.get("/")
 async def root():

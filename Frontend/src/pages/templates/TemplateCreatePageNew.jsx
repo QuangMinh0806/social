@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Save, MessageSquare, Hash, Droplet, Image, Video } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { templateService } from '../../services/template.service';
+import { mediaService } from '../../services/media.service';
 import Card from '../../components/common/Card';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
@@ -95,19 +96,18 @@ const TemplateCreatePageNew = () => {
       return;
     }
 
-    // Read file and convert to base64 for preview
+    // Hiển thị preview ngay lập tức
     const reader = new FileReader();
     reader.onloadend = () => {
       setFormData(prev => ({
         ...prev,
-        [fieldName]: reader.result
+        [`${fieldName}_preview`]: reader.result, // Preview base64
+        [`${fieldName}_file`]: file // File object để upload sau
       }));
-      toast.success(`Đã chọn ảnh: ${file.name}`);
-    };
-    reader.onerror = () => {
-      toast.error('Lỗi khi đọc file ảnh');
     };
     reader.readAsDataURL(file);
+    
+    toast.success(`Đã chọn ảnh: ${file.name}`);
   };
 
   const handleSubmit = async (e) => {
@@ -128,8 +128,28 @@ const TemplateCreatePageNew = () => {
         toast.error('Vui lòng chọn aspect ratio');
         return;
       }
-      if (!formData.frame_image_url) {
+      if (!formData.frame_image_url_file) {
         toast.error('Vui lòng upload ảnh làm khung');
+        return;
+      }
+    }
+
+    // Validation for watermark
+    if (activeTab === 'watermark') {
+      if (!formData.category) {
+        toast.error('Vui lòng chọn danh mục');
+        return;
+      }
+      if (!formData.watermark_image_url_file) {
+        toast.error('Vui lòng upload ảnh watermark');
+        return;
+      }
+    }
+
+    // Validation for caption and hashtag
+    if (activeTab === 'caption' || activeTab === 'hashtag') {
+      if (!formData.category) {
+        toast.error('Vui lòng chọn danh mục');
         return;
       }
     }
@@ -142,6 +162,57 @@ const TemplateCreatePageNew = () => {
         ...formData,
         template_type: activeTab,
       };
+
+      // Upload ảnh trước nếu có
+      // 1. Upload frame image
+      if (formData.frame_image_url_file) {
+        const uploadFormData = new FormData();
+        uploadFormData.append('file', formData.frame_image_url_file);
+        uploadFormData.append('user_id', formData.created_by);
+        uploadFormData.append('tags', `template,frame,${activeTab}`);
+
+        try {
+          const uploadResponse = await mediaService.upload(uploadFormData);
+          if (uploadResponse.success && uploadResponse.data) {
+            submitData.frame_image_url = uploadResponse.data.file_url;
+          } else {
+            throw new Error('Upload frame image failed');
+          }
+        } catch (uploadError) {
+          toast.error('Không thể upload ảnh khung');
+          console.error('Upload error:', uploadError);
+          setLoading(false);
+          return;
+        }
+      }
+
+      // 2. Upload watermark image
+      if (formData.watermark_image_url_file) {
+        const uploadFormData = new FormData();
+        uploadFormData.append('file', formData.watermark_image_url_file);
+        uploadFormData.append('user_id', formData.created_by);
+        uploadFormData.append('tags', 'template,watermark');
+
+        try {
+          const uploadResponse = await mediaService.upload(uploadFormData);
+          if (uploadResponse.success && uploadResponse.data) {
+            submitData.watermark_image_url = uploadResponse.data.file_url;
+          } else {
+            throw new Error('Upload watermark image failed');
+          }
+        } catch (uploadError) {
+          toast.error('Không thể upload ảnh watermark');
+          console.error('Upload error:', uploadError);
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Remove preview and file fields
+      delete submitData.frame_image_url_preview;
+      delete submitData.frame_image_url_file;
+      delete submitData.watermark_image_url_preview;
+      delete submitData.watermark_image_url_file;
 
       // Process hashtags field - convert string to array
       if (activeTab === 'hashtag' && formData.hashtags) {
@@ -197,12 +268,23 @@ const TemplateCreatePageNew = () => {
               placeholder="Nhập tên template"
               required
             />
-            <Input
-              label="Danh mục"
+            <Select
+              label="Danh mục *"
               name="category"
               value={formData.category}
               onChange={handleChange}
-              placeholder="Ví dụ: Marketing, Sự kiện"
+              placeholder="-- Chọn danh mục --"
+              required
+              options={[
+                { value: 'Sản phẩm', label: 'Sản phẩm' },
+                { value: 'Dịch vụ', label: 'Dịch vụ' },
+                { value: 'Khuyến mãi', label: 'Khuyến mãi' },
+                { value: 'Sự kiện', label: 'Sự kiện' },
+                { value: 'Thời trang', label: 'Thời trang' },
+                { value: 'Ẩm thực', label: 'Ẩm thực' },
+                { value: 'Du lịch', label: 'Du lịch' },
+                { value: 'Công nghệ', label: 'Công nghệ' }
+              ]}
             />
             <Textarea
               label="Nội dung"
@@ -228,12 +310,23 @@ const TemplateCreatePageNew = () => {
               placeholder="Nhập tên template"
               required
             />
-            <Input
-              label="Danh mục"
+            <Select
+              label="Danh mục *"
               name="category"
               value={formData.category}
               onChange={handleChange}
-              placeholder="Ví dụ: Logo công ty"
+              placeholder="-- Chọn danh mục --"
+              required
+              options={[
+                { value: 'Sản phẩm', label: 'Sản phẩm' },
+                { value: 'Dịch vụ', label: 'Dịch vụ' },
+                { value: 'Khuyến mãi', label: 'Khuyến mãi' },
+                { value: 'Sự kiện', label: 'Sự kiện' },
+                { value: 'Thời trang', label: 'Thời trang' },
+                { value: 'Ẩm thực', label: 'Ẩm thực' },
+                { value: 'Du lịch', label: 'Du lịch' },
+                { value: 'Công nghệ', label: 'Công nghệ' }
+              ]}
             />
             <Select
               label="Vị trí"
@@ -267,7 +360,7 @@ const TemplateCreatePageNew = () => {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Upload hình watermark *
               </label>
-              {!formData.watermark_image_url ? (
+              {!formData.watermark_image_url_preview ? (
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
                   <input
                     type="file"
@@ -290,13 +383,13 @@ const TemplateCreatePageNew = () => {
                 <div className="space-y-3">
                   <div className="relative border-2 border-gray-200 rounded-lg p-4 bg-gray-50">
                     <img 
-                      src={formData.watermark_image_url} 
+                      src={formData.watermark_image_url_preview} 
                       alt="Watermark Preview" 
                       className="max-w-xs mx-auto rounded"
                     />
                     <button
                       type="button"
-                      onClick={() => setFormData(prev => ({ ...prev, watermark_image_url: '' }))}
+                      onClick={() => setFormData(prev => ({ ...prev, watermark_image_url_preview: '', watermark_image_url_file: null }))}
                       className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-2 shadow-lg transition-colors"
                       title="Xóa ảnh"
                     >
@@ -373,7 +466,7 @@ const TemplateCreatePageNew = () => {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Upload ảnh làm khung *
               </label>
-              {!formData.frame_image_url ? (
+              {!formData.frame_image_url_preview ? (
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors">
                   <input
                     type="file"
@@ -398,13 +491,13 @@ const TemplateCreatePageNew = () => {
                 <div className="space-y-3">
                   <div className="relative border-2 border-gray-200 rounded-lg p-4 bg-gray-50">
                     <img 
-                      src={formData.frame_image_url} 
+                      src={formData.frame_image_url_preview} 
                       alt="Frame Preview" 
                       className="max-w-md mx-auto rounded border shadow-sm"
                     />
                     <button
                       type="button"
-                      onClick={() => setFormData(prev => ({ ...prev, frame_image_url: '' }))}
+                      onClick={() => setFormData(prev => ({ ...prev, frame_image_url_preview: '', frame_image_url_file: null }))}
                       className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-2 shadow-lg transition-colors"
                       title="Xóa ảnh"
                     >
@@ -491,7 +584,7 @@ const TemplateCreatePageNew = () => {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Upload ảnh làm khung video *
               </label>
-              {!formData.frame_image_url ? (
+              {!formData.frame_image_url_preview ? (
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors">
                   <input
                     type="file"
@@ -516,13 +609,13 @@ const TemplateCreatePageNew = () => {
                 <div className="space-y-3">
                   <div className="relative border-2 border-gray-200 rounded-lg p-4 bg-gray-50">
                     <img 
-                      src={formData.frame_image_url} 
+                      src={formData.frame_image_url_preview} 
                       alt="Frame Preview" 
                       className="max-w-md mx-auto rounded border shadow-sm"
                     />
                     <button
                       type="button"
-                      onClick={() => setFormData(prev => ({ ...prev, frame_image_url: '' }))}
+                      onClick={() => setFormData(prev => ({ ...prev, frame_image_url_preview: '', frame_image_url_file: null }))}
                       className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-2 shadow-lg transition-colors"
                       title="Xóa ảnh"
                     >

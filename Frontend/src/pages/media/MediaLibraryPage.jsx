@@ -207,14 +207,14 @@ const MediaLibraryPage = () => {
               icon={<Import size={20} />}
               onClick={() => setShowImport(true)}
             >
-              Import Media
+              Tải video từ link
             </Button>
             <Button
               variant="primary"
               icon={<Upload size={20} />}
               onClick={() => setShowUpload(true)}
             >
-              Upload Media
+              Tải video từ thiết bị
             </Button>
           </div>
         }

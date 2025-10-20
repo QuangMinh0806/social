@@ -7,6 +7,7 @@ import { pageService } from '../../services/page.service';
 import { platformService } from '../../services/platform.service';
 import { mediaService } from '../../services/media.service';
 import { youtubeService } from '../../services/youtube.service';
+import { templateService } from '../../services/template.service';
 import aiService from '../../services/ai.service';
 import { useAuthStore } from '../../stores/authStore';
 import Card from '../../components/common/Card';
@@ -39,6 +40,9 @@ const PostCreatePage = () => {
   const [imageFrameTemplate, setImageFrameTemplate] = useState('');
   const [videoFrameTemplate, setVideoFrameTemplate] = useState('');
   const [watermarkTemplate, setWatermarkTemplate] = useState('');
+  const [imageFrameTemplates, setImageFrameTemplates] = useState([]); // Danh sách frame cho ảnh
+  const [videoFrameTemplates, setVideoFrameTemplates] = useState([]); // Danh sách frame cho video
+  const [watermarkTemplates, setWatermarkTemplates] = useState([]); // Danh sách watermark
   const [hashtags, setHashtags] = useState('');
   const [formData, setFormData] = useState({
     content: '',
@@ -57,6 +61,7 @@ const PostCreatePage = () => {
     fetchPages();
     fetchPlatforms();
     fetchVideoLibrary();
+    fetchTemplates();
   }, [isAuthenticated, user, navigate]);
 
   const fetchPages = async () => {
@@ -83,6 +88,25 @@ const PostCreatePage = () => {
       setVideoLibrary(response.data || []);
     } catch (error) {
       console.error('Error fetching video library:', error);
+    }
+  };
+
+  const fetchTemplates = async () => {
+    try {
+      const response = await templateService.getAll();
+      const allTemplates = response.data || [];
+
+      // Lọc templates theo loại
+      const imageFrames = allTemplates.filter(t => t.template_type === 'image_frame');
+      const videoFrames = allTemplates.filter(t => t.template_type === 'video_frame');
+      const watermarks = allTemplates.filter(t => t.template_type === 'watermark');
+
+      setImageFrameTemplates(imageFrames);
+      setVideoFrameTemplates(videoFrames);
+      setWatermarkTemplates(watermarks);
+    } catch (error) {
+      console.error('Error fetching templates:', error);
+      toast.error('Không thể tải danh sách templates');
     }
   };
 
@@ -118,6 +142,38 @@ const PostCreatePage = () => {
       return;
     }
 
+    // Kiểm tra xem có page nào là Instagram hoặc Threads không
+    const hasInstagramOrThreads = selectedPages.some(pageId => {
+      const page = pages.find(p => p.id === pageId);
+      const platformName = page?.platform?.name?.toLowerCase() || '';
+      return platformName === 'instagram' || platformName === 'threads';
+    });
+
+    // Validation cho Instagram và Threads
+    if (hasInstagramOrThreads) {
+      const instagramPages = selectedPages.filter(pageId => {
+        const page = pages.find(p => p.id === pageId);
+        return page?.platform?.name?.toLowerCase() === 'instagram';
+      });
+
+      const threadsPages = selectedPages.filter(pageId => {
+        const page = pages.find(p => p.id === pageId);
+        return page?.platform?.name?.toLowerCase() === 'threads';
+      });
+
+      // Kiểm tra Instagram phải có URLs
+      if (instagramPages.length > 0 && !instagramMediaUrls.trim()) {
+        toast.error('Instagram yêu cầu phải có Media URLs. Vui lòng nhập ít nhất 1 URL ảnh/video.');
+        return;
+      }
+
+      // Kiểm tra Threads phải có URLs
+      if (threadsPages.length > 0 && !threadsMediaUrls.trim()) {
+        toast.error('Threads yêu cầu phải có Media URLs. Vui lòng nhập ít nhất 1 URL ảnh/video.');
+        return;
+      }
+    }
+
     try {
       setLoading(true);
 
@@ -143,10 +199,17 @@ const PostCreatePage = () => {
         // Tạo FormData để gửi file + data
         const formDataToSend = new FormData();
 
+        // Ghép content với hashtags trước khi gửi
+        let finalContent = formData.content;
+        if (hashtags.trim()) {
+          // Thêm 2 dòng trống + hashtags
+          finalContent = `${formData.content}\n\n${hashtags}`;
+        }
+
         // Thêm các field bắt buộc
         formDataToSend.append('user_id', user.id);
         formDataToSend.append('page_id', pageId);
-        formDataToSend.append('content', formData.content);
+        formDataToSend.append('content', finalContent); // Sử dụng finalContent (có hashtags)
         formDataToSend.append('status', publishType === 'now' ? 'published' : 'scheduled');
 
         // Xác định post_type và media_type
@@ -157,23 +220,37 @@ const PostCreatePage = () => {
         if (isInstagram && instagramMediaUrls.trim()) {
           // Parse URLs (mỗi dòng 1 URL)
           const urls = instagramMediaUrls.split('\n').filter(url => url.trim());
-          postType = 'image'; // Hoặc 'video' tùy vào URL
-          mediaType = 'image';
 
-          // Gửi URLs cho Instagram
-          urls.forEach(url => {
-            formDataToSend.append('media_urls', url.trim());
-          });
+          if (urls.length === 1) {
+            // Single image/video
+            postType = 'image';
+            mediaType = 'image';
+            formDataToSend.append('media_urls', urls[0].trim());
+          } else if (urls.length > 1) {
+            // Carousel (nhiều ảnh)
+            postType = 'carousel';
+            mediaType = 'image';
+            urls.forEach(url => {
+              formDataToSend.append('media_urls', url.trim());
+            });
+          }
         } else if (isThreads && threadsMediaUrls.trim()) {
           // Parse URLs (mỗi dòng 1 URL) cho Threads
           const urls = threadsMediaUrls.split('\n').filter(url => url.trim());
-          postType = 'image'; // Hoặc 'video' tùy vào URL
-          mediaType = 'image';
 
-          // Gửi URLs cho Threads
-          urls.forEach(url => {
-            formDataToSend.append('media_urls', url.trim());
-          });
+          if (urls.length === 1) {
+            // Single image/video
+            postType = 'image';
+            mediaType = 'image';
+            formDataToSend.append('media_urls', urls[0].trim());
+          } else if (urls.length > 1) {
+            // Multiple images
+            postType = 'carousel';
+            mediaType = 'image';
+            urls.forEach(url => {
+              formDataToSend.append('media_urls', url.trim());
+            });
+          }
         } else if (selectedVideo) {
           // Upload video file từ máy tính (Facebook, TikTok, YouTube)
           postType = 'video';
@@ -196,6 +273,17 @@ const PostCreatePage = () => {
         formDataToSend.append('post_type', postType);
         formDataToSend.append('media_type', mediaType);
 
+        // Thêm template IDs nếu có
+        if (imageFrameTemplate) {
+          formDataToSend.append('image_frame_template_id', imageFrameTemplate);
+        }
+        if (videoFrameTemplate) {
+          formDataToSend.append('video_frame_template_id', videoFrameTemplate);
+        }
+        if (watermarkTemplate) {
+          formDataToSend.append('watermark_template_id', watermarkTemplate);
+        }
+
         // Thêm scheduled_at nếu có
         if (publishType === 'schedule' && formData.scheduled_at) {
           formDataToSend.append('scheduled_at', formData.scheduled_at);
@@ -205,6 +293,38 @@ const PostCreatePage = () => {
       });
 
       const results = await Promise.all(promises);
+
+      // Increment usage count cho các templates được sử dụng
+      const templateIncrementPromises = [];
+
+      if (imageFrameTemplate) {
+        templateIncrementPromises.push(
+          templateService.incrementUsage(imageFrameTemplate).catch(err =>
+            console.error('Error incrementing image frame usage:', err)
+          )
+        );
+      }
+
+      if (videoFrameTemplate) {
+        templateIncrementPromises.push(
+          templateService.incrementUsage(videoFrameTemplate).catch(err =>
+            console.error('Error incrementing video frame usage:', err)
+          )
+        );
+      }
+
+      if (watermarkTemplate) {
+        templateIncrementPromises.push(
+          templateService.incrementUsage(watermarkTemplate).catch(err =>
+            console.error('Error incrementing watermark usage:', err)
+          )
+        );
+      }
+
+      // Chạy increment usage (không chờ vì không ảnh hưởng tới kết quả)
+      if (templateIncrementPromises.length > 0) {
+        Promise.all(templateIncrementPromises);
+      }
 
       // Dismiss loading toast
       toast.dismiss(loadingToast);
@@ -266,9 +386,16 @@ const PostCreatePage = () => {
         return;
       }
 
+      // Cập nhật content (không có hashtags)
       setFormData({ ...formData, content: data.content });
+      
+      // Cập nhật hashtags nếu có
+      if (data.hashtags) {
+        setHashtags(data.hashtags);
+      }
+      
       setAiTopic(''); // Clear topic after success
-      toast.success('Đã tạo nội dung thành công!');
+      toast.success('Đã tạo nội dung và hashtags thành công!');
     } catch (error) {
       toast.error('Không thể tạo nội dung. Vui lòng thử lại.');
       console.error('Error generating content:', error);
@@ -382,7 +509,11 @@ const PostCreatePage = () => {
                 onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                 placeholder="Nhập nội dung bài đăng hoặc sử dụng AI để tạo..."
                 required
+                className="resize-y min-h-[150px] max-h-[500px]"
               />
+              <p className="text-xs text-gray-500 mt-1">
+                💡 Kéo góc dưới bên phải để mở rộng ô nhập liệu
+              </p>
             </div>
 
             {/* Platform & Page Selection - 2 Column Layout */}
@@ -487,24 +618,46 @@ const PostCreatePage = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Hình ảnh
                 </label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-500 cursor-pointer bg-gray-50">
-                  <input
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    className="hidden"
-                    id="image-upload"
-                    onChange={(e) => {
-                      const files = Array.from(e.target.files);
-                      setSelectedImages(files);
-                    }}
-                  />
-                  <label htmlFor="image-upload" className="cursor-pointer">
-                    <ImageIcon className="mx-auto h-8 w-8 text-gray-400 mb-2" />
-                    <p className="text-sm text-gray-600">Chọn hình ảnh</p>
-                    <p className="text-xs text-gray-500 mt-1">Hỗ trợ nhiều ảnh</p>
-                  </label>
-                </div>
+                {/* Kiểm tra xem có chọn Instagram/Threads không */}
+                {selectedPlatforms.some(id => {
+                  const platform = platforms.find(p => p.id === id);
+                  const name = platform?.name?.toLowerCase() || '';
+                  return name === 'instagram' || name === 'threads';
+                }) ? (
+                  <div className="border-2 border-yellow-300 bg-yellow-50 rounded-lg p-6 text-center">
+                    <div className="text-yellow-600 mb-2">
+                      <svg className="mx-auto h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
+                    </div>
+                    <p className="text-sm text-yellow-700 font-medium">Upload file không khả dụng</p>
+                    <p className="text-xs text-yellow-600 mt-2">
+                      Instagram & Threads chỉ hỗ trợ Media URLs
+                    </p>
+                    <p className="text-xs text-yellow-600">
+                      Vui lòng nhập URLs bên dưới ↓
+                    </p>
+                  </div>
+                ) : (
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-500 cursor-pointer bg-gray-50">
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      className="hidden"
+                      id="image-upload"
+                      onChange={(e) => {
+                        const files = Array.from(e.target.files);
+                        setSelectedImages(files);
+                      }}
+                    />
+                    <label htmlFor="image-upload" className="cursor-pointer">
+                      <ImageIcon className="mx-auto h-8 w-8 text-gray-400 mb-2" />
+                      <p className="text-sm text-gray-600">Chọn hình ảnh</p>
+                      <p className="text-xs text-gray-500 mt-1">Hỗ trợ nhiều ảnh</p>
+                    </label>
+                  </div>
+                )}
 
                 {/* Image Preview */}
                 {selectedImages.length > 0 && (
@@ -553,48 +706,72 @@ const PostCreatePage = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Video
                 </label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-500 cursor-pointer bg-gray-50">
-                  <input
-                    type="file"
-                    accept="video/*"
-                    className="hidden"
-                    id="video-upload"
-                    onChange={(e) => {
-                      const file = e.target.files[0];
-                      if (file) {
-                        setSelectedVideo(file);
-                        setSelectedVideoUrl(''); // Clear video URL
-                        setSelectedImages([]); // Clear images if video is selected
-                      }
-                    }}
-                  />
-                  <label htmlFor="video-upload" className="cursor-pointer">
-                    <Video className="mx-auto h-8 w-8 text-gray-400 mb-2" />
-                    <p className="text-sm text-gray-600">Chọn video từ máy tính</p>
-                    <p className="text-xs text-gray-500 mt-1">Hoặc chọn từ thư viện bên dưới</p>
-                  </label>
-                </div>
+                {/* Kiểm tra xem có chọn Instagram/Threads không */}
+                {selectedPlatforms.some(id => {
+                  const platform = platforms.find(p => p.id === id);
+                  const name = platform?.name?.toLowerCase() || '';
+                  return name === 'instagram' || name === 'threads';
+                }) ? (
+                  <div className="border-2 border-yellow-300 bg-yellow-50 rounded-lg p-6 text-center">
+                    <div className="text-yellow-600 mb-2">
+                      <svg className="mx-auto h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
+                    </div>
+                    <p className="text-sm text-yellow-700 font-medium">Upload file không khả dụng</p>
+                    <p className="text-xs text-yellow-600 mt-2">
+                      Instagram & Threads chỉ hỗ trợ Media URLs
+                    </p>
+                    <p className="text-xs text-yellow-600">
+                      Vui lòng nhập URLs bên dưới ↓
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-500 cursor-pointer bg-gray-50">
+                      <input
+                        type="file"
+                        accept="video/*"
+                        className="hidden"
+                        id="video-upload"
+                        onChange={(e) => {
+                          const file = e.target.files[0];
+                          if (file) {
+                            setSelectedVideo(file);
+                            setSelectedVideoUrl(''); // Clear video URL
+                            setSelectedImages([]); // Clear images if video is selected
+                          }
+                        }}
+                      />
+                      <label htmlFor="video-upload" className="cursor-pointer">
+                        <Video className="mx-auto h-8 w-8 text-gray-400 mb-2" />
+                        <p className="text-sm text-gray-600">Chọn video từ máy tính</p>
+                        <p className="text-xs text-gray-500 mt-1">Hoặc chọn từ thư viện bên dưới</p>
+                      </label>
+                    </div>
 
-                {/* Select from Video Library */}
-                <div className="mt-3">
-                  <Select
-                    value={selectedVideoUrl}
-                    onChange={(e) => {
-                      setSelectedVideoUrl(e.target.value);
-                      if (e.target.value) {
-                        setSelectedVideo(null); // Clear uploaded file
-                        setSelectedImages([]); // Clear images
-                      }
-                    }}
-                    options={[
-                      { value: '', label: 'Hoặc chọn video từ thư viện...' },
-                      ...videoLibrary.map(video => ({
-                        value: video.file_url,
-                        label: `${video.file_name} (${(video.file_size / 1024 / 1024).toFixed(2)} MB)`
-                      }))
-                    ]}
-                  />
-                </div>
+                    {/* Select from Video Library */}
+                    <div className="mt-3">
+                      <Select
+                        value={selectedVideoUrl}
+                        onChange={(e) => {
+                          setSelectedVideoUrl(e.target.value);
+                          if (e.target.value) {
+                            setSelectedVideo(null); // Clear uploaded file
+                            setSelectedImages([]); // Clear images
+                          }
+                        }}
+                        options={[
+                          { value: '', label: 'Hoặc chọn video từ thư viện...' },
+                          ...videoLibrary.map(video => ({
+                            value: video.file_url,
+                            label: `${video.file_name} (${(video.file_size / 1024 / 1024).toFixed(2)} MB)`
+                          }))
+                        ]}
+                      />
+                    </div>
+                  </>
+                )}
 
                 {/* Video Preview - Uploaded File */}
                 {selectedVideo && (
@@ -681,22 +858,30 @@ const PostCreatePage = () => {
               const platform = platforms.find(p => p.id === id);
               return platform?.name?.toLowerCase() === 'instagram';
             }) && (
-                <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    📸 Instagram Media URLs
-                  </label>
+                <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-300 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-2xl">📸</span>
+                    <label className="block text-sm font-bold text-purple-700">
+                      Instagram Media URLs (Bắt buộc) *
+                    </label>
+                  </div>
                   <Textarea
                     rows={5}
                     value={instagramMediaUrls}
                     onChange={(e) => setInstagramMediaUrls(e.target.value)}
                     placeholder="Nhập URL công khai của ảnh/video (HTTPS)&#10;Mỗi dòng 1 URL:&#10;&#10;https://example.com/image1.jpg&#10;https://example.com/image2.jpg&#10;https://example.com/video1.mp4"
-                    className="font-mono text-sm"
+                    className="font-mono text-sm border-purple-300 focus:border-purple-500 focus:ring-purple-500"
+                    required
                   />
-                  <div className="mt-2 text-xs text-gray-600 space-y-1">
-                    <p>⚠️ <strong>Lưu ý:</strong> Instagram không hỗ trợ upload file trực tiếp</p>
-                    <p>✅ Bạn cần upload ảnh/video lên dịch vụ khác (Imgur, Cloudinary, etc.) và paste URL vào đây</p>
-                    <p>🔗 URL phải là HTTPS và có thể truy cập công khai</p>
-                    <p>📝 Mỗi dòng 1 URL (hỗ trợ nhiều ảnh)</p>
+                  <div className="mt-3 p-3 bg-white rounded border border-purple-200">
+                    <p className="text-xs font-bold text-purple-800 mb-2">⚠️ LƯU Ý QUAN TRỌNG:</p>
+                    <div className="text-xs text-purple-700 space-y-1.5">
+                      <p>✅ <strong>1 URL = 1 ảnh/video</strong> (Single post)</p>
+                      <p>✅ <strong>2-10 URLs = Carousel</strong> (Nhiều ảnh trong 1 bài)</p>
+                      <p>🔗 URL phải là <strong>HTTPS</strong> và truy cập công khai</p>
+                      <p>📤 Upload ảnh lên: <a href="https://imgur.com" target="_blank" className="text-blue-600 underline">Imgur</a>, <a href="https://cloudinary.com" target="_blank" className="text-blue-600 underline">Cloudinary</a>, hoặc hosting của bạn</p>
+                      <p>📝 Mỗi dòng 1 URL, không có dấu cách thừa</p>
+                    </div>
                   </div>
                 </div>
               )}
@@ -706,23 +891,30 @@ const PostCreatePage = () => {
               const platform = platforms.find(p => p.id === id);
               return platform?.name?.toLowerCase() === 'threads';
             }) && (
-                <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    🧵 Threads Media URLs
-                  </label>
+                <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-2xl">🧵</span>
+                    <label className="block text-sm font-bold text-blue-700">
+                      Threads Media URLs (Bắt buộc) *
+                    </label>
+                  </div>
                   <Textarea
                     rows={5}
                     value={threadsMediaUrls}
                     onChange={(e) => setThreadsMediaUrls(e.target.value)}
-                    placeholder="Nhập URL công khai của ảnh/video (HTTPS)&#10;Mỗi dòng 1 URL:&#10;&#10;https://example.com/image1.jpg&#10;https://example.com/image2.jpg&#10;https://example.com/video1.mp4&#10;&#10;Hoặc để trống để đăng chỉ text"
-                    className="font-mono text-sm"
+                    placeholder="Nhập URL công khai của ảnh/video (HTTPS)&#10;Mỗi dòng 1 URL:&#10;&#10;https://example.com/image1.jpg&#10;https://example.com/image2.jpg&#10;https://example.com/video1.mp4"
+                    className="font-mono text-sm border-blue-300 focus:border-blue-500 focus:ring-blue-500"
+                    required
                   />
-                  <div className="mt-2 text-xs text-gray-600 space-y-1">
-                    <p>⚠️ <strong>Lưu ý:</strong> Threads không hỗ trợ upload file trực tiếp</p>
-                    <p>✅ Bạn cần upload ảnh/video lên dịch vụ khác (Imgur, Cloudinary, etc.) và paste URL vào đây</p>
-                    <p>🔗 URL phải là HTTPS và có thể truy cập công khai</p>
-                    <p>📝 Mỗi dòng 1 URL (hỗ trợ nhiều ảnh)</p>
-                    <p>💬 Có thể để trống để đăng text-only</p>
+                  <div className="mt-3 p-3 bg-white rounded border border-blue-200">
+                    <p className="text-xs font-bold text-blue-800 mb-2">⚠️ LƯU Ý QUAN TRỌNG:</p>
+                    <div className="text-xs text-blue-700 space-y-1.5">
+                      <p>✅ <strong>1 URL = 1 ảnh/video</strong> (Single post)</p>
+                      <p>✅ <strong>Nhiều URLs = Nhiều ảnh</strong> trong 1 bài</p>
+                      <p>🔗 URL phải là <strong>HTTPS</strong> và truy cập công khai</p>
+                      <p>� Upload ảnh lên: <a href="https://imgur.com" target="_blank" className="text-blue-600 underline">Imgur</a>, <a href="https://cloudinary.com" target="_blank" className="text-blue-600 underline">Cloudinary</a>, hoặc hosting của bạn</p>
+                      <p>� Mỗi dòng 1 URL, không có dấu cách thừa</p>
+                    </div>
                   </div>
                 </div>
               )}
@@ -733,28 +925,56 @@ const PostCreatePage = () => {
                 🎨 Frame Templates (Tùy chọn)
               </label>
               <div className="grid grid-cols-2 gap-4">
-                <Select
-                  label="Frame cho Hình ảnh"
-                  value={imageFrameTemplate}
-                  onChange={(e) => setImageFrameTemplate(e.target.value)}
-                  placeholder=""
-                  options={[
-                    { value: '', label: 'Không sử dụng frame' },
-                    { value: 'frame1', label: 'Frame 1' },
-                    { value: 'frame2', label: 'Frame 2' },
-                  ]}
-                />
-                <Select
-                  label="Frame cho Video"
-                  value={videoFrameTemplate}
-                  onChange={(e) => setVideoFrameTemplate(e.target.value)}
-                  placeholder=""
-                  options={[
-                    { value: '', label: 'Không sử dụng frame' },
-                    { value: 'frame1', label: 'Frame 1' },
-                    { value: 'frame2', label: 'Frame 2' },
-                  ]}
-                />
+                <div>
+                  <Select
+                    label="Frame cho Hình ảnh"
+                    value={imageFrameTemplate}
+                    onChange={(e) => setImageFrameTemplate(e.target.value)}
+                    placeholder=""
+                    options={[
+                      { value: '', label: 'Không sử dụng frame' },
+                      ...imageFrameTemplates.map(template => ({
+                        value: template.id.toString(),
+                        label: `${template.name}${template.category ? ` - ${template.category}` : ''}${template.aspect_ratio ? ` (${template.aspect_ratio})` : ''}`
+                      }))
+                    ]}
+                  />
+                  {imageFrameTemplate && imageFrameTemplates.find(t => t.id.toString() === imageFrameTemplate)?.frame_image_url && (
+                    <div className="mt-2 p-2 bg-gray-50 rounded border">
+                      <p className="text-xs text-gray-600 mb-1">Preview:</p>
+                      <img
+                        src={imageFrameTemplates.find(t => t.id.toString() === imageFrameTemplate).frame_image_url}
+                        alt="Frame Preview"
+                        className="w-full max-h-32 object-contain rounded"
+                      />
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <Select
+                    label="Frame cho Video"
+                    value={videoFrameTemplate}
+                    onChange={(e) => setVideoFrameTemplate(e.target.value)}
+                    placeholder=""
+                    options={[
+                      { value: '', label: 'Không sử dụng frame' },
+                      ...videoFrameTemplates.map(template => ({
+                        value: template.id.toString(),
+                        label: `${template.name}${template.category ? ` - ${template.category}` : ''}${template.aspect_ratio ? ` (${template.aspect_ratio})` : ''}`
+                      }))
+                    ]}
+                  />
+                  {videoFrameTemplate && videoFrameTemplates.find(t => t.id.toString() === videoFrameTemplate)?.frame_image_url && (
+                    <div className="mt-2 p-2 bg-gray-50 rounded border">
+                      <p className="text-xs text-gray-600 mb-1">Preview:</p>
+                      <img
+                        src={videoFrameTemplates.find(t => t.id.toString() === videoFrameTemplate).frame_image_url}
+                        alt="Frame Preview"
+                        className="w-full max-h-32 object-contain rounded"
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
               <p className="text-xs text-gray-500 mt-1">
                 Áp dụng cho tất cả hình ảnh trong bài đăng
@@ -776,10 +996,28 @@ const PostCreatePage = () => {
                 placeholder=""
                 options={[
                   { value: '', label: 'Không sử dụng watermark' },
-                  { value: 'wm1', label: 'Watermark 1' },
-                  { value: 'wm2', label: 'Watermark 2' },
+                  ...watermarkTemplates.map(template => ({
+                    value: template.id.toString(),
+                    label: `${template.name}${template.category ? ` - ${template.category}` : ''} (Vị trí: ${template.watermark_position || 'bottom-right'})`
+                  }))
                 ]}
               />
+              {watermarkTemplate && watermarkTemplates.find(t => t.id.toString() === watermarkTemplate)?.watermark_image_url && (
+                <div className="mt-2 p-2 bg-gray-50 rounded border">
+                  <p className="text-xs text-gray-600 mb-1">Preview watermark:</p>
+                  <div className="flex items-center gap-2">
+                    <img
+                      src={watermarkTemplates.find(t => t.id.toString() === watermarkTemplate).watermark_image_url}
+                      alt="Watermark Preview"
+                      className="w-24 h-24 object-contain rounded border bg-white"
+                    />
+                    <div className="text-xs text-gray-600">
+                      <p>Vị trí: <strong>{watermarkTemplates.find(t => t.id.toString() === watermarkTemplate).watermark_position}</strong></p>
+                      <p>Độ mờ: <strong>{watermarkTemplates.find(t => t.id.toString() === watermarkTemplate).watermark_opacity}</strong></p>
+                    </div>
+                  </div>
+                </div>
+              )}
               <p className="text-xs text-gray-500 mt-1">
                 Chỉ áp dụng cho không sử dụng Frame
               </p>

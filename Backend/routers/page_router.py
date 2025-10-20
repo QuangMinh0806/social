@@ -77,7 +77,7 @@ async def get_pages_by_platform(
 @router.post("/")
 async def create_page(
     data: dict,
-    current_user: User = Depends(get_current_user),
+    # current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -100,7 +100,7 @@ async def create_page(
     Note: created_by will be automatically set to current user
     """
     # Add current user ID to data
-    data['created_by'] = current_user.id
+    print("Creating page with data:", data)
     controller = PageController(db)
     return await controller.create(data)
 

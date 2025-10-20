@@ -157,14 +157,14 @@ class PageService:
         if not page:
             return None
         
-        # Get platform info if available
+        # Get platform data if relationship is loaded
         platform_data = None
         if hasattr(page, 'platform') and page.platform:
             platform_data = {
                 "id": page.platform.id,
                 "name": page.platform.name,
-                "icon_url": page.platform.icon_url,
-                "is_active": page.platform.is_active
+                "icon": getattr(page.platform, 'icon', None),
+                "color": getattr(page.platform, 'color', None),
             }
         
         return {

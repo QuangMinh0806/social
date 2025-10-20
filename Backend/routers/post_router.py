@@ -5,6 +5,7 @@ from controllers.post_controller import PostController
 from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
+from utils.timezone_utils import parse_datetime_from_frontend
 
 
 router = APIRouter(prefix="/posts", tags=["Posts"])
@@ -116,6 +117,9 @@ async def create_post(
     scheduled_at: Optional[str] = Form(None),
     video_url: Optional[str] = Form(None),  # Video URL từ thư viện
     media_urls: List[str] = Form(None),  # URLs cho Instagram (mỗi dòng 1 URL)
+    image_frame_template_id: Optional[int] = Form(None),  # ID của frame cho ảnh
+    video_frame_template_id: Optional[int] = Form(None),  # ID của frame cho video
+    watermark_template_id: Optional[int] = Form(None),  # ID của watermark
     files: List[UploadFile] = File(None),
     db: AsyncSession = Depends(get_db)
 ):
@@ -131,6 +135,9 @@ async def create_post(
     print(f"  - media_urls (raw): {media_urls}")
     print(f"  - files: {files}")
     print(f"  - video_url: {video_url}")
+    print(f"  - image_frame_template_id: {image_frame_template_id}")
+    print(f"  - video_frame_template_id: {video_frame_template_id}")
+    print(f"  - watermark_template_id: {watermark_template_id}")
     
     # Đọc file data từ uploads hoặc sử dụng video URL
     media_files = []
@@ -162,10 +169,16 @@ async def create_post(
         "media_urls": media_url_list,  # Truyền URLs (cho Instagram)
         "template_id": template_id,
         "title": title,
+        "image_frame_template_id": image_frame_template_id,
+        "video_frame_template_id": video_frame_template_id,
+        "watermark_template_id": watermark_template_id,
     }
     
+    # Parse scheduled_at từ Frontend (GMT+7) → UTC để lưu DB
     if scheduled_at:
-        post_data["scheduled_at"] = datetime.fromisoformat(scheduled_at)
+        post_data["scheduled_at"] = parse_datetime_from_frontend(scheduled_at)
+        print(f"⏰ Scheduled time (GMT+7 input): {scheduled_at}")
+        print(f"⏰ Scheduled time (UTC stored): {post_data['scheduled_at']}")
     
     return await controller.create(post_data)
 
@@ -221,3 +234,37 @@ async def schedule_post(
     """Schedule a post for later"""
     controller = PostController(db)
     return await controller.schedule_post(post_id, schedule_data.scheduled_at)
+
+
+@router.get("/scheduler/upcoming")
+async def get_upcoming_scheduled_posts(
+    limit: int = Query(10, ge=1, le=100),
+):
+    """Get upcoming scheduled posts"""
+    from services.scheduler_service import scheduler_service
+    posts = await scheduler_service.get_upcoming_scheduled_posts(limit)
+    return {
+        "success": True,
+        "message": f"Found {len(posts)} upcoming scheduled posts",
+        "data": posts
+    }
+
+
+@router.post("/{post_id}/trigger-now")
+async def trigger_scheduled_post_now(
+    post_id: int,
+):
+    """Trigger a scheduled post to publish immediately (bypass scheduled_at)"""
+    from services.scheduler_service import scheduler_service
+    success = await scheduler_service.trigger_scheduled_post_now(post_id)
+    
+    if success:
+        return {
+            "success": True,
+            "message": f"Post {post_id} triggered successfully"
+        }
+    else:
+        return {
+            "success": False,
+            "message": f"Failed to trigger post {post_id}"
+        }

@@ -26,6 +26,9 @@ class Settings:
     DEFAULT_SKIP: int = 0
     DEFAULT_LIMIT: int = 100
     MAX_LIMIT: int = 1000
+    
+    # Timezone
+    TIMEZONE: str = "Asia/Ho_Chi_Minh"  # GMT+7
 
 
 settings = Settings()

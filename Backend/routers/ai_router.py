@@ -18,6 +18,7 @@ class GenerateContentRequest(BaseModel):
 
 class GenerateContentResponse(BaseModel):
     content: str
+    hashtags: str = ""  # Thêm field hashtags
 
 
 class LLMCreate(BaseModel):
@@ -85,18 +86,23 @@ async def delete_llm(
 
 # ==================== Content Generation Endpoints ====================
 @router.post("/generate-content", response_model=GenerateContentResponse)
-async def generate_content(request: GenerateContentRequest):
+async def generate_content_endpoint(request: GenerateContentRequest):
     """
-    Generate social media content using AI based on given topic
+    Generate social media content using AI based on given topic.
+    Returns content and hashtags separately.
     """
     try:
+        
         if not request.topic or not request.topic.strip():
             raise HTTPException(status_code=400, detail="Topic không được để trống")
         
-        # Gọi hàm AI để tạo nội dung
-        content = await ask_chatbot(request.topic)
+        # Gọi hàm AI để tạo nội dung (trả về dict với content và hashtags)
+        result = await ask_chatbot(request.topic)
         
-        return GenerateContentResponse(content=content)
+        return GenerateContentResponse(
+            content=result["content"],
+            hashtags=result["hashtags"]
+        )
     
     except ValueError as e:
         raise HTTPException(status_code=500, detail=str(e))

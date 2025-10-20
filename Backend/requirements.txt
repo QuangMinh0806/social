@@ -20,6 +20,9 @@ yt-dlp==2025.10.14
 aiohttp==3.9.1
 aiofiles==23.2.0
 douyindl
+# Scheduler
+apscheduler==3.10.4
+
 # Development
 pytest==7.4.3
 pytest-asyncio==0.21.1

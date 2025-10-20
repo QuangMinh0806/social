@@ -90,7 +90,7 @@ const ConnectWithYoutube = ({ userId, pageId, onTokenUpdate }) => {
 
             console.log('🚀 Bắt đầu kết nối YouTube...')
 
-            const response = await axios.get(`${API_BASE_URL}/youtube/connect`)
+            const response = await axios.get(`${API_BASE_URL}/api/youtube/connect`)
             console.log('YouTube connect response:', response.data)
             if (response.data.success) {
                 const authWindow = window.open(

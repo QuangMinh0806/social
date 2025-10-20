@@ -33,7 +33,7 @@ async def facebook_callback(code: Optional[str] = None, db: AsyncSession = Depen
     
     await facebook_page_controller.facebook_callback_controller(code, db)
 
-    return RedirectResponse(url=f"{URL_FE}/admin/facebook_page")
+    return RedirectResponse(url="http://localhost:3000/pages")
 
 
 # ==================== POST TO FACEBOOK PAGE ====================

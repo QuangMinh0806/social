@@ -124,6 +124,7 @@ const PageListPage = () => {
 
     // Statistics by platform
     const platformStats = useMemo(() => {
+        console.log('Platforms:', platforms);
         const stats = {};
         platforms.forEach(platform => {
             const count = pages.filter(page => page.platform_id === platform.id).length;

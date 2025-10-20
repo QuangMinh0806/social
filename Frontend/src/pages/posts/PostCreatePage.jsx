@@ -190,10 +190,17 @@ const PostCreatePage = () => {
         // Tạo FormData để gửi file + data
         const formDataToSend = new FormData();
 
+        // Ghép content với hashtags trước khi gửi
+        let finalContent = formData.content;
+        if (hashtags.trim()) {
+          // Thêm 2 dòng trống + hashtags
+          finalContent = `${formData.content}\n\n${hashtags}`;
+        }
+
         // Thêm các field bắt buộc
         formDataToSend.append('user_id', 13); // TODO: Get from auth
         formDataToSend.append('page_id', pageId);
-        formDataToSend.append('content', formData.content);
+        formDataToSend.append('content', finalContent); // Sử dụng finalContent (có hashtags)
         formDataToSend.append('status', publishType === 'now' ? 'published' : 'scheduled');
 
         // Xác định post_type và media_type
@@ -370,9 +377,16 @@ const PostCreatePage = () => {
         return;
       }
 
+      // Cập nhật content (không có hashtags)
       setFormData({ ...formData, content: data.content });
+      
+      // Cập nhật hashtags nếu có
+      if (data.hashtags) {
+        setHashtags(data.hashtags);
+      }
+      
       setAiTopic(''); // Clear topic after success
-      toast.success('Đã tạo nội dung thành công!');
+      toast.success('Đã tạo nội dung và hashtags thành công!');
     } catch (error) {
       toast.error('Không thể tạo nội dung. Vui lòng thử lại.');
       console.error('Error generating content:', error);
@@ -474,7 +488,11 @@ const PostCreatePage = () => {
                 onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                 placeholder="Nhập nội dung bài đăng hoặc sử dụng AI để tạo..."
                 required
+                className="resize-y min-h-[150px] max-h-[500px]"
               />
+              <p className="text-xs text-gray-500 mt-1">
+                💡 Kéo góc dưới bên phải để mở rộng ô nhập liệu
+              </p>
             </div>
 
             {/* Platform & Page Selection - 2 Column Layout */}

@@ -18,7 +18,7 @@ export const API_ENDPOINTS = {
     CHANGE_USER_PASSWORD: (id) => `/users/${id}/change-password`,
 
     // Platforms
-    PLATFORMS: '/platforms/',
+    PLATFORMS: '/platforms',
     PLATFORM_BY_ID: (id) => `/platforms/${id}`,
     ACTIVE_PLATFORMS: '/platforms/active',
 

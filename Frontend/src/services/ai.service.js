@@ -1,4 +1,4 @@
-import apiService from './api.service';
+import apiClient from './api.service';
 
 const aiService = {
   /**
@@ -9,7 +9,7 @@ const aiService = {
   generateContent: async (topic) => {
     try {
       // apiService already returns response.data in interceptor
-      const data = await apiService.post('/ai/generate-content', { topic });
+      const data = await apiClient.post('/ai/generate-content', { topic });
       return data;
     } catch (error) {
       console.error('Error generating content:', error);
@@ -25,7 +25,7 @@ const aiService = {
   generateHashtags: async (topic) => {
     try {
       // apiService already returns response.data in interceptor
-      const data = await apiService.post('/ai/generate-hashtags', { topic });
+      const data = await apiClient.post('/ai/generate-hashtags', { topic });
       return data;
     } catch (error) {
       console.error('Error generating hashtags:', error);

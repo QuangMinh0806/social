@@ -12,13 +12,13 @@ export const API_ENDPOINTS = {
     // Users - Updated for new user management
     USERS: '/users/',
     USER_BY_ID: (id) => `/users/${id}`,
-    CREATE_USER: '/users',
+    CREATE_USER: '/users/', 
     UPDATE_USER: (id) => `/users/${id}`,
     DELETE_USER: (id) => `/users/${id}`,
     CHANGE_USER_PASSWORD: (id) => `/users/${id}/change-password`,
 
     // Platforms
-    PLATFORMS: '/platforms',
+    PLATFORMS: '/platforms/',
     PLATFORM_BY_ID: (id) => `/platforms/${id}`,
     ACTIVE_PLATFORMS: '/platforms/active',
 
@@ -31,25 +31,25 @@ export const API_ENDPOINTS = {
     SYNC_FOLLOWERS: (id) => `/pages/${id}/sync-followers`,
 
     // Page Permissions
-    PAGE_PERMISSIONS: '/page-permissions',
+    PAGE_PERMISSIONS: '/page-permissions/',
     PERMISSION_BY_ID: (id) => `/page-permissions/${id}`,
     USER_PAGES: (userId) => `/page-permissions/user/${userId}`,
     CHECK_PERMISSION: (userId, pageId) => `/page-permissions/check/${userId}/${pageId}`,
 
     // Templates
-    TEMPLATES: '/templates',
+    TEMPLATES: '/templates/',
     TEMPLATE_BY_ID: (id) => `/templates/${id}`,
     PUBLIC_TEMPLATES: '/templates/public',
     TEMPLATES_BY_CATEGORY: (category) => `/templates/category/${category}`,
     INCREMENT_TEMPLATE_USAGE: (id) => `/templates/${id}/increment-usage`,
 
     // Watermarks
-    WATERMARKS: '/watermarks',
+    WATERMARKS: '/watermarks/',
     WATERMARK_BY_ID: (id) => `/watermarks/${id}`,
     DEFAULT_WATERMARK: '/watermarks/default',
 
     // Media
-    MEDIA: '/media',
+    MEDIA: '/media/',
     MEDIA_BY_ID: (id) => `/media/${id}`,
     MEDIA_BY_USER: (userId) => `/media/user/${userId}`,
     MEDIA_BY_TYPE: (type) => `/media/type/${type}`,
@@ -57,14 +57,14 @@ export const API_ENDPOINTS = {
     MARK_PROCESSED: (id) => `/media/${id}/mark-processed`,
 
     // Hashtags
-    HASHTAGS: '/hashtags',
+    HASHTAGS: '/hashtags/',
     HASHTAG_BY_ID: (id) => `/hashtags/${id}`,
     POPULAR_HASHTAGS: '/hashtags/popular',
     SEARCH_HASHTAGS: '/hashtags/search',
     INCREMENT_HASHTAG_USAGE: (id) => `/hashtags/${id}/increment-usage`,
 
     // Posts
-    POSTS: '/posts',
+    POSTS: '/posts/',
     POST_BY_ID: (id) => `/posts/${id}`,
     POST_BY_STATUS: (status) => `/posts/status/${status}`,
     POST_BY_PAGE: (pageId) => `/posts/page/${pageId}`,
@@ -76,13 +76,13 @@ export const API_ENDPOINTS = {
     UPDATE_POST_STATUS: (id) => `/posts/${id}/status`,
 
     // Post Media
-    POST_MEDIA: '/post-media',
+    POST_MEDIA: '/post-media/',
     POST_MEDIA_BY_POST: (postId) => `/post-media/post/${postId}`,
     ADD_MEDIA_TO_POST: '/post-media/add',
     REORDER_MEDIA: '/post-media/reorder',
 
     // Post Hashtags
-    POST_HASHTAGS: '/post-hashtags',
+    POST_HASHTAGS: '/post-hashtags/',
     POST_HASHTAGS_BY_POST: (postId) => `/post-hashtags/post/${postId}`,
     ADD_HASHTAGS_TO_POST: '/post-hashtags/add',
     REMOVE_HASHTAG_FROM_POST: '/post-hashtags/remove',
@@ -95,7 +95,7 @@ export const API_ENDPOINTS = {
     CALCULATE_ENGAGEMENT: (postId) => `/analytics/posts/${postId}/engagement`,
 
     // AI Assistant
-    AI: '/ai',
+    AI: '/ai/',
     AI_GENERATE: '/ai/generate',
     AI_SUGGESTIONS: '/ai/suggestions',
     AI_CHAT: '/ai/chat',

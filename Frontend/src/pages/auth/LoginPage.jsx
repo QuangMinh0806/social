@@ -149,14 +149,6 @@ const LoginPage = () => {
             </button>
           </div>
 
-          {/* Demo Accounts */}
-          <div className="mt-6 p-4 bg-gray-50 rounded-md">
-            <h3 className="text-sm font-medium text-gray-700 mb-2">Tài khoản demo:</h3>
-            <div className="text-xs text-gray-600 space-y-1">
-              <div><strong>Admin:</strong> admin / 123456</div>
-            </div>
-          </div>
-
           {/* Register Link */}
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">

@@ -10,6 +10,7 @@ class Settings:
     # Database
     DATABASE_URL: str = os.getenv(
         "DATABASE_URL")
+    CORS_ORIGINS: Optional[str] = os.getenv("CORS_ORIGINS", "*")
     print(f"Using DATABASE_URL: {DATABASE_URL}")
     
     # Application
@@ -23,7 +24,7 @@ class Settings:
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES"))
     
     # CORS
-    CORS_ORIGINS: list = ["*"]
+    CORS_ORIGINS: list = [CORS_ORIGINS]
     
     # API Settings
     API_PREFIX: str = "/api"

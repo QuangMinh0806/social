@@ -10,7 +10,7 @@ export const API_ENDPOINTS = {
     CHANGE_PASSWORD: '/auth/change-password',
 
     // Users - Updated for new user management
-    USERS: '/users',
+    USERS: '/users/',
     USER_BY_ID: (id) => `/users/${id}`,
     CREATE_USER: '/users',
     UPDATE_USER: (id) => `/users/${id}`,
@@ -23,7 +23,7 @@ export const API_ENDPOINTS = {
     ACTIVE_PLATFORMS: '/platforms/active',
 
     // Pages
-    PAGES: '/pages',
+    PAGES: '/pages/',
     PAGE_BY_ID: (id) => `/pages/${id}`,
     PAGE_BY_USER: (userId) => `/pages/user/${userId}`,
     PAGE_BY_PLATFORM: (platformId) => `/pages/platform/${platformId}`,

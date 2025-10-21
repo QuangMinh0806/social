@@ -70,16 +70,16 @@ const YoutubeCallback = () => {
                     timeout: 30000 // 30 seconds timeout
                 })
 
-                console.log('📋 YouTube callback response:', response.data)
+                console.log('📋 YouTube callback response:', response)
 
-                if (response.data.success) {
+                if (response.success) {
                     const {
                         token_info,
                         user_info,
                         youtube_channels,
                         page_data,
                         redirect_url
-                    } = response.data
+                    } = response
 
                     setStatus('success')
                     setMessage('Kết nối YouTube thành công!')
@@ -127,20 +127,20 @@ const YoutubeCallback = () => {
                     }
 
                 } else {
-                    console.error('YouTube callback failed:', response.data.message)
+                    console.error('YouTube callback failed:', response.message)
                     setStatus('error')
-                    setMessage(`Lỗi: ${response.data.message}`)
+                    setMessage(`Lỗi: ${response.message}`)
 
                     if (window.opener) {
                         window.opener.postMessage({
                             type: 'YOUTUBE_AUTH_ERROR',
-                            error: response.data.message
+                            error: response.message
                         }, window.location.origin)
 
                         setTimeout(() => window.close(), 2000)
                     } else {
                         setTimeout(() => {
-                            navigate('/pages?error=' + encodeURIComponent(response.data.message))
+                            navigate('/pages?error=' + encodeURIComponent(response.message))
                         }, 3000)
                     }
                 }

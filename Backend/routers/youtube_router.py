@@ -86,7 +86,7 @@ async def youtube_callback(
             token_info=token_info,
             user_info=user_info,
             youtube_channels=youtube_channels,
-            platform_id=3,  # YouTube platform ID
+            platform_id=14,  # YouTube platform ID
             created_by=current_user.id
         )
         
@@ -98,7 +98,7 @@ async def youtube_callback(
             page_service = PageService(db)
             
             # Kiểm tra xem page đã tồn tại chưa (tránh duplicate)
-            existing_pages = await page_service.get_by_platform(platform_id=3)
+            existing_pages = await page_service.get_by_platform(platform_id=14)
             channel_id = page_data.get('page_id')
             
             existing_page = None

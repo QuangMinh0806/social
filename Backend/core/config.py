@@ -12,6 +12,7 @@ class Settings:
         "DATABASE_URL")
     CORS_ORIGINS: Optional[str] = os.getenv("CORS_ORIGINS", "*")
     print(f"Using DATABASE_URL: {DATABASE_URL}")
+    print(f"Using CORS_ORIGINS: {CORS_ORIGINS}")
     
     # Application
     APP_NAME: str = "Social Media Auto Posting API"

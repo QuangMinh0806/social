@@ -12,8 +12,8 @@ export default defineConfig({
     ],
     proxy: {
       '/api': {
-        // target: 'https://autosocialbe.tmedu.vn',
-        target: 'http://localhost:8000',
+        target: 'https://autosocialbe.tmedu.vn',
+        // target: 'http://localhost:8000',
         changeOrigin: true,
       },
     },

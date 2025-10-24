@@ -1,10 +1,10 @@
-import { Bell, Search, User, LogOut, Settings, Crown, ShieldCheck, Shield } from 'lucide-react';
+import { Bell, Search, User, LogOut, Settings, Crown, ShieldCheck, Shield, Menu } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import Avatar from '../common/Avatar';
 
-const Header = () => {
+const Header = ({ onMenuClick }) => {
   const navigate = useNavigate();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const { user, logout, getRoleLabel } = useAuth();
@@ -29,6 +29,14 @@ const Header = () => {
   return (
     <header className="bg-white border-b border-gray-200 px-6 py-4">
       <div className="flex items-center justify-between">
+        {/* Nút mở sidebar (chỉ hiện trên mobile) */}
+        <button
+          className="lg:hidden mr-4 p-2 hover:bg-gray-100 rounded-lg"
+          onClick={onMenuClick}
+        >
+          <Menu size={24} />
+        </button>
+
         <div className="flex items-center flex-1 max-w-2xl">
           <div className="relative w-full">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />

@@ -1,13 +1,13 @@
 import { Link, useLocation } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  FileText, 
-  Calendar, 
-  Facebook, 
-  Users, 
-  FileImage, 
-  Image, 
-  BarChart3, 
+import {
+  LayoutDashboard,
+  FileText,
+  Calendar,
+  Facebook,
+  Users,
+  FileImage,
+  Image,
+  BarChart3,
   Bot,
   Settings,
   ChevronLeft,
@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 
-const Sidebar = () => {
+const Sidebar = ({ isOpen, onClose }) => {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
 
@@ -33,7 +33,16 @@ const Sidebar = () => {
   ];
 
   return (
-    <aside className={`bg-gray-900 text-white transition-all duration-300 ${collapsed ? 'w-20' : 'w-64'} flex flex-col`}>
+    <aside
+      className={`
+        fixed inset-y-0 left-0 z-30 bg-gray-900 text-white
+        transition-transform duration-300
+        ${isOpen ? "translate-x-0" : "-translate-x-full"}
+        w-64 lg:static lg:translate-x-0
+        ${collapsed ? "lg:w-20" : "lg:w-64"}
+        flex flex-col
+      `}
+    >
       <div className="p-4 flex items-center justify-between border-b border-gray-800">
         {!collapsed && <h1 className="text-xl font-bold">Social Auto Post</h1>}
         <button
@@ -48,15 +57,16 @@ const Sidebar = () => {
         {menuItems.map((item) => {
           const Icon = item.icon;
           const isActive = location.pathname.startsWith(item.path);
-          
+
           return (
             <Link
+              onClick={onClose} // ✅ đóng sidebar khi click menu trên mobile
               key={item.path}
               to={item.path}
               className={`
                 flex items-center gap-3 px-4 py-3 transition-colors
-                ${isActive 
-                  ? 'bg-blue-600 text-white' 
+                ${isActive
+                  ? 'bg-blue-600 text-white'
                   : 'text-gray-300 hover:bg-gray-800 hover:text-white'
                 }
               `}

@@ -14,7 +14,7 @@ class PageService:
     def __init__(self, db: AsyncSession):
         self.db = db
     
-    async def get_all(self, skip: int = 0, limit: int = 100) -> List[Dict]:
+    async def get_all(self, skip: int = 0, limit: int = 20) -> List[Dict]:
         """Get all pages with pagination"""
         query = select(Page).options(selectinload(Page.platform)).offset(skip).limit(limit)
         result = await self.db.execute(query)
@@ -28,7 +28,7 @@ class PageService:
         page = result.scalar_one_or_none()
         return self._to_dict(page) if page else None
     
-    async def get_by_user(self, user_id: int, skip: int = 0, limit: int = 100) -> List[Dict]:
+    async def get_by_user(self, user_id: int, skip: int = 0, limit: int = 20) -> List[Dict]:
         """Get all pages created by a specific user"""
         query = (
             select(Page)
@@ -41,7 +41,7 @@ class PageService:
         pages = result.scalars().all()
         return [self._to_dict(page) for page in pages]
     
-    async def get_by_platform(self, platform_id: int, skip: int = 0, limit: int = 100) -> List[Dict]:
+    async def get_by_platform(self, platform_id: int, skip: int = 0, limit: int = 20) -> List[Dict]:
         """Get all pages for a specific platform"""
         query = (
             select(Page)

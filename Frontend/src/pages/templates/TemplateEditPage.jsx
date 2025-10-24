@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Save, Hash, MessageSquare, Droplet, Image, Video, Plus, X } from 'lucide-react';
+import { ArrowLeft, Save, Hash, MessageSquare, Droplet, Image, Video } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { templateService } from '../../services/template.service';
 import { watermarkService } from '../../services/watermark.service';
@@ -20,41 +20,41 @@ const TemplateEditPage = () => {
   const [watermarks, setWatermarks] = useState([]);
   const [hashtagInput, setHashtagInput] = useState('');
   const [activeTab, setActiveTab] = useState('caption'); // caption, hashtag, watermark, image_frame, video_frame
-  
+
   const [formData, setFormData] = useState({
     template_type: 'caption',
     name: '',
     description: '',
     category: '',
-    
+
     // Caption
     caption: '',
-    
+
     // Hashtags
     hashtags: [],
-    
+
     // Watermark fields
     watermark_position: 'bottom-right',
     watermark_opacity: 0.8,
     watermark_image_url: '',
-    
+
     // Frame fields
     frame_type: '',
     aspect_ratio: '',
     frame_image_url: '',
-    
+
     // Legacy Watermark
     watermark_id: null,
     watermark_enabled: false,
-    
+
     // Legacy Image Frame
     image_frame_url: '',
     image_frame_enabled: false,
-    
+
     // Legacy Video Frame
     video_frame_url: '',
     video_frame_enabled: false,
-    
+
     // Legacy
     content_template: '',
     thumbnail_url: '',
@@ -79,35 +79,29 @@ const TemplateEditPage = () => {
       setLoading(true);
       const response = await templateService.getById(id);
       const data = response.data;
-      
-      // Set active tab based on template_type
+
       if (data.template_type) {
         setActiveTab(data.template_type);
       }
-      
+
       setFormData({
         template_type: data.template_type || 'caption',
         name: data.name || '',
         description: data.description || '',
         category: data.category || '',
-        
-        // Caption
+
         caption: data.caption || '',
-        
-        // Hashtags
+
         hashtags: Array.isArray(data.hashtags) ? data.hashtags : [],
-        
-        // Watermark fields
+
         watermark_position: data.watermark_position || 'bottom-right',
         watermark_opacity: data.watermark_opacity || 0.8,
         watermark_image_url: data.watermark_image_url || '',
-        
-        // Frame fields
+
         frame_type: data.frame_type || '',
         aspect_ratio: data.aspect_ratio || '',
         frame_image_url: data.frame_image_url || '',
-        
-        // Legacy fields
+
         watermark_id: data.watermark_id || null,
         watermark_enabled: data.watermark_enabled || false,
         image_frame_url: data.image_frame_url || '',
@@ -157,8 +151,6 @@ const TemplateEditPage = () => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // TODO: Upload to server and get URL
-    // For now, use FileReader for preview
     const reader = new FileReader();
     reader.onloadend = () => {
       setFormData(prev => ({
@@ -199,7 +191,7 @@ const TemplateEditPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!formData.name.trim()) {
       toast.error('Vui lòng nhập tên mẫu');
       return;
@@ -212,14 +204,12 @@ const TemplateEditPage = () => {
 
     try {
       setSaving(true);
-      
-      // Prepare data based on template type
+
       const submitData = {
         ...formData,
         template_type: activeTab,
       };
 
-      // Process hashtags field - ensure it's an array
       if (activeTab === 'hashtag') {
         if (typeof formData.hashtags === 'string') {
           submitData.hashtags = formData.hashtags
@@ -233,7 +223,6 @@ const TemplateEditPage = () => {
         submitData.hashtags = activeTab === 'hashtag' ? [] : null;
       }
 
-      // Clean up unused fields based on template type
       if (activeTab !== 'caption') {
         delete submitData.caption;
       }
@@ -271,6 +260,7 @@ const TemplateEditPage = () => {
               onChange={handleChange}
               placeholder="Nhập nội dung caption..."
               rows={8}
+              className="w-full"
             />
             <p className="text-sm text-gray-500">
               💡 Gợi ý: Sử dụng biến trong dấu ngoặc nhọn như {'{'}product_name{'}'}, {'{'}price{'}'} để tạo caption linh hoạt
@@ -288,11 +278,12 @@ const TemplateEditPage = () => {
               onChange={handleChange}
               placeholder="Nhập hashtags cách nhau bởi dấu cách (ví dụ: #marketing #sale #2024)"
               rows={8}
+              className="w-full"
             />
             <p className="text-sm text-gray-500">
               💡 Gợi ý: Nhập các hashtag cách nhau bởi dấu cách, không cần dấu # (sẽ tự động thêm)
             </p>
-            
+
             {formData.hashtags && Array.isArray(formData.hashtags) && formData.hashtags.length > 0 && (
               <div className="bg-green-50 p-3 rounded border border-green-200">
                 <p className="text-xs text-green-600 font-medium mb-2">Hashtags hiện tại:</p>
@@ -324,8 +315,9 @@ const TemplateEditPage = () => {
                 { value: 'top-right', label: 'Góc trên phải' },
                 { value: 'bottom-left', label: 'Góc dưới trái' },
                 { value: 'bottom-right', label: 'Góc dưới phải' },
-                { value: 'center', label: 'Giữa' }
+                { value: 'center', label: 'Giữa' },
               ]}
+              className="w-full"
             />
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -343,15 +335,13 @@ const TemplateEditPage = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Hình watermark hiện tại
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Hình watermark hiện tại</label>
               {formData.watermark_image_url && (
                 <div className="mb-3">
-                  <img 
-                    src={formData.watermark_image_url} 
-                    alt="Current Watermark" 
-                    className="max-w-xs rounded border shadow-sm"
+                  <img
+                    src={formData.watermark_image_url}
+                    alt="Current Watermark"
+                    className="max-w-full h-auto rounded border shadow-sm"
                   />
                 </div>
               )}
@@ -377,19 +367,18 @@ const TemplateEditPage = () => {
                 { value: '1:1', label: 'Vuông (1:1)' },
                 { value: '9:16', label: 'Dọc (9:16)' },
                 { value: '16:9', label: 'Ngang (16:9)' },
-                { value: '4:5', label: '4:5' }
+                { value: '4:5', label: '4:5' },
               ]}
+              className="w-full"
             />
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Ảnh khung hiện tại
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Ảnh khung hiện tại</label>
               {formData.frame_image_url && (
                 <div className="mb-3 border-2 border-gray-200 rounded-lg p-4 bg-gray-50">
-                  <img 
-                    src={formData.frame_image_url} 
-                    alt="Current Frame" 
-                    className="max-w-md mx-auto rounded border shadow-sm"
+                  <img
+                    src={formData.frame_image_url}
+                    alt="Current Frame"
+                    className="max-w-full h-auto mx-auto rounded border shadow-sm"
                   />
                 </div>
               )}
@@ -418,11 +407,11 @@ const TemplateEditPage = () => {
   if (loading) return <Loading fullScreen />;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 px-4 sm:px-6 lg:px-12 max-w-screen-xl mx-auto">
       <Breadcrumb
         items={[
           { label: 'Templates & Watermarks', path: '/templates' },
-          { label: 'Chỉnh sửa template' }
+          { label: 'Chỉnh sửa template' },
         ]}
       />
 
@@ -433,7 +422,7 @@ const TemplateEditPage = () => {
             <button
               key={tab.id}
               onClick={() => handleTabChange(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap min-w-[100px] ${
                 activeTab === tab.id
                   ? `bg-${tab.color}-600 text-white`
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -452,7 +441,7 @@ const TemplateEditPage = () => {
           title={`Chỉnh sửa ${tabs.find(t => t.id === activeTab)?.label} Template`}
           subtitle="Cập nhật thông tin template của bạn"
         >
-          <div className="space-y-4">
+          <div className="space-y-4 max-w-full">
             <Input
               label="Tên template *"
               name="name"
@@ -460,6 +449,7 @@ const TemplateEditPage = () => {
               onChange={handleChange}
               placeholder="Nhập tên template"
               required
+              className="w-full"
             />
             <Select
               label="Danh mục *"
@@ -476,8 +466,9 @@ const TemplateEditPage = () => {
                 { value: 'Thời trang', label: 'Thời trang' },
                 { value: 'Ẩm thực', label: 'Ẩm thực' },
                 { value: 'Du lịch', label: 'Du lịch' },
-                { value: 'Công nghệ', label: 'Công nghệ' }
+                { value: 'Công nghệ', label: 'Công nghệ' },
               ]}
+              className="w-full"
             />
             <Textarea
               label="Mô tả"
@@ -486,6 +477,7 @@ const TemplateEditPage = () => {
               onChange={handleChange}
               placeholder="Mô tả ngắn gọn về template này"
               rows={3}
+              className="w-full"
             />
             <label className="flex items-center gap-2 cursor-pointer">
               <input
@@ -495,9 +487,7 @@ const TemplateEditPage = () => {
                 onChange={handleChange}
                 className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
               />
-              <span className="text-sm text-gray-700">
-                Công khai template này cho tất cả người dùng
-              </span>
+              <span className="text-sm text-gray-700">Công khai template này cho tất cả người dùng</span>
             </label>
           </div>
         </Card>
@@ -512,12 +502,13 @@ const TemplateEditPage = () => {
 
         {/* Action Buttons */}
         <Card>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col md:flex-row items-center gap-4">
             <Button
               type="submit"
               variant="primary"
               icon={<Save size={20} />}
               disabled={saving}
+              className="w-full md:w-auto"
             >
               {saving ? 'Đang lưu...' : 'Cập nhật mẫu'}
             </Button>
@@ -527,6 +518,7 @@ const TemplateEditPage = () => {
               icon={<ArrowLeft size={20} />}
               onClick={() => navigate('/templates')}
               disabled={saving}
+              className="w-full md:w-auto"
             >
               Hủy và quay lại
             </Button>

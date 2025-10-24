@@ -32,8 +32,8 @@ class Settings:
     
     # Pagination
     DEFAULT_SKIP: int = 0
-    DEFAULT_LIMIT: int = 100
-    MAX_LIMIT: int = 1000
+    DEFAULT_limit: int = 20
+    MAX_limit: int = 200
     
     # Timezone
     TIMEZONE: str = "Asia/Ho_Chi_Minh"  # GMT+7

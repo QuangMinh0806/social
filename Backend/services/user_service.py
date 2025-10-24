@@ -30,7 +30,7 @@ class UserService:
         self, 
         current_user: User,
         skip: int = 0, 
-        limit: int = 100,
+        limit: int = 20,
         role_filter: Optional[UserRole] = None,
         status_filter: Optional[UserStatus] = None,
         search: Optional[str] = None

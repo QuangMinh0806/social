@@ -125,7 +125,8 @@ const MediaLibraryPage = () => {
       {/* Statistics Section */}
       <div className="mb-6">
         <h2 className="text-xl font-semibold mb-4">Thư viện Media</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {/* SỬA 1: grid-cols-1 sm:grid-cols-2 md:grid-cols-4 */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
           {/* Images */}
           <div
             className={`bg-white rounded-lg p-4 shadow-sm text-center hover:shadow-md transition-shadow cursor-pointer ${typeFilter === 'image' ? 'ring-2 ring-blue-500' : ''}`}
@@ -201,11 +202,13 @@ const MediaLibraryPage = () => {
         title="Danh sách Media"
         subtitle={`Tổng ${filteredMedia.length}/${media.length} file`}
         actions={
-          <div className="flex gap-2">
+          /* SỬA 2: flex-col sm:flex-row và w-full sm:w-auto cho div, thêm className cho Button */
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             <Button
               variant="primary"
               icon={<Import size={20} />}
               onClick={() => setShowImport(true)}
+              className="w-full justify-center sm:w-auto"
             >
               Tải video từ link
             </Button>
@@ -213,6 +216,7 @@ const MediaLibraryPage = () => {
               variant="primary"
               icon={<Upload size={20} />}
               onClick={() => setShowUpload(true)}
+              className="w-full justify-center sm:w-auto"
             >
               Tải video từ thiết bị
             </Button>
@@ -297,8 +301,9 @@ const MediaLibraryPage = () => {
           </div>
         ) : (
           <>
+            {/* SỬA 3: Thêm sm:grid-cols-3, lg:grid-cols-5, 2xl:grid-cols-8 */}
             <div className={viewMode === 'grid'
-              ? 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4'
+              ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-4'
               : 'space-y-2'
             }>
               {paginatedMedia.map((item) => (
@@ -386,12 +391,12 @@ const MediaLibraryPage = () => {
                     </div>
                   </div>
                 ) : (
-                  // List View
+                  // SỬA 4: List View (Toàn bộ khối div này đã được sửa đổi)
                   <div
                     key={item.id}
-                    className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow flex items-center gap-4"
+                    className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow flex flex-col sm:flex-row sm:items-center gap-4"
                   >
-                    <div className="w-16 h-16 bg-gray-100 rounded flex items-center justify-center flex-shrink-0 overflow-hidden">
+                    <div className="w-full sm:w-16 sm:h-16 h-32 bg-gray-100 rounded flex items-center justify-center flex-shrink-0 overflow-hidden">
                       {item.thumbnail_url || (item.file_type === 'image' && item.file_url) ? (
                         <img
                           src={item.thumbnail_url || item.file_url}
@@ -403,24 +408,32 @@ const MediaLibraryPage = () => {
                       )}
                     </div>
 
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 w-full">
                       <p className="font-medium text-gray-900 truncate">{item.file_name}</p>
-                      <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 mt-1 text-sm text-gray-500">
                         <span>{formatFileSize(item.file_size)}</span>
+
                         {item.width && item.height && (
-                          <span>{item.width} × {item.height}</span>
+                          <>
+                            <span className="hidden sm:inline">·</span>
+                            <span>{item.width} × {item.height}</span>
+                          </>
                         )}
+
+                        <span className="hidden sm:inline">·</span>
                         <span>{new Date(item.created_at).toLocaleDateString('vi-VN')}</span>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 w-full sm:w-auto justify-end mt-2 sm:mt-0">
                       <Badge
                         variant={item.file_type === 'image' ? 'primary' : item.file_type === 'video' ? 'purple' : 'success'}
                         size="sm"
                       >
                         {item.file_type}
                       </Badge>
+                      {/* Thêm flex-grow để đẩy các nút về bên phải */}
+                      <div className="flex-grow sm:flex-grow-0"></div>
                       <button
                         onClick={() => handlePreview(item)}
                         className="p-2 hover:bg-gray-100 rounded"
@@ -491,7 +504,8 @@ const MediaLibraryPage = () => {
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-4 text-sm">
+            {/* SỬA 5: grid-cols-1 sm:grid-cols-2 */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
               <div>
                 <span className="text-gray-600">Tên file:</span>
                 <p className="font-medium">{selectedMedia.file_name}</p>

@@ -28,7 +28,6 @@ const DashboardPage = () => {
         try {
             setLoading(true);
 
-            // Fetch tất cả data trong 1 lần để giảm tải
             const [postsResponse, pagesResponse] = await Promise.all([
                 postService.getAll(),
                 pageService.getAll()
@@ -37,7 +36,6 @@ const DashboardPage = () => {
             const posts = postsResponse.data || [];
             const pages = pagesResponse.data || [];
 
-            // Calculate stats
             const today = new Date();
             today.setHours(0, 0, 0, 0);
 
@@ -59,10 +57,9 @@ const DashboardPage = () => {
                 postsToday: postsToday,
                 videosProcessed: videosProcessed,
                 connectedPages: connectedPages,
-                totalEmployees: 8, // TODO: Get from API
+                totalEmployees: 8,
             });
 
-            // Get 5 recent posts
             const sortedPosts = posts
                 .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
                 .slice(0, 5);
@@ -105,163 +102,165 @@ const DashboardPage = () => {
     if (loading) return <Loading fullScreen />;
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
             {/* Header */}
             <div>
-                <h1 className="text-2xl font-bold text-gray-900">Tổng quan hệ thống</h1>
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Tổng quan hệ thống</h1>
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
                 {/* Tổng bài đăng */}
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/posts')}>
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer p-4 sm:p-6" onClick={() => navigate('/posts')}>
                     <div className="flex items-start justify-between">
-                        <div>
-                            <p className="text-sm text-gray-600 mb-1">Tổng bài đăng</p>
-                            <p className="text-3xl font-bold text-blue-600 mb-2">{stats.totalPosts}</p>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-xs sm:text-sm text-gray-600 mb-1">Tổng bài đăng</p>
+                            <p className="text-2xl sm:text-3xl font-bold text-blue-600 mb-1 sm:mb-2">{stats.totalPosts}</p>
                             <p className="text-xs text-green-600">+{stats.postsToday} hôm nay</p>
                         </div>
-                        <div className="p-3 bg-blue-100 rounded-lg">
-                            <FileText className="text-blue-600" size={28} />
+                        <div className="p-2 sm:p-3 bg-blue-100 rounded-lg flex-shrink-0">
+                            <FileText className="text-blue-600" size={24} />
                         </div>
                     </div>
                 </Card>
 
                 {/* Video đã xử lý */}
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/posts')}>
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer p-4 sm:p-6" onClick={() => navigate('/posts')}>
                     <div className="flex items-start justify-between">
-                        <div>
-                            <p className="text-sm text-gray-600 mb-1">Video đã xử lý</p>
-                            <p className="text-3xl font-bold text-green-600 mb-2">{stats.videosProcessed}</p>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-xs sm:text-sm text-gray-600 mb-1">Video đã xử lý</p>
+                            <p className="text-2xl sm:text-3xl font-bold text-green-600 mb-1 sm:mb-2">{stats.videosProcessed}</p>
                             <p className="text-xs text-green-600">+5 hôm nay</p>
                         </div>
-                        <div className="p-3 bg-green-100 rounded-lg">
-                            <Video className="text-green-600" size={28} />
+                        <div className="p-2 sm:p-3 bg-green-100 rounded-lg flex-shrink-0">
+                            <Video className="text-green-600" size={24} />
                         </div>
                     </div>
                 </Card>
 
                 {/* Page kết nối */}
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate('/pages')}>
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer p-4 sm:p-6" onClick={() => navigate('/pages')}>
                     <div className="flex items-start justify-between">
-                        <div>
-                            <p className="text-sm text-gray-600 mb-1">Page kết nối</p>
-                            <p className="text-3xl font-bold text-purple-600 mb-2">{stats.connectedPages}</p>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-xs sm:text-sm text-gray-600 mb-1">Page kết nối</p>
+                            <p className="text-2xl sm:text-3xl font-bold text-purple-600 mb-1 sm:mb-2">{stats.connectedPages}</p>
                             <p className="text-xs text-blue-600">2 mới kết nối</p>
                         </div>
-                        <div className="p-3 bg-purple-100 rounded-lg">
-                            <Share2 className="text-purple-600" size={28} />
+                        <div className="p-2 sm:p-3 bg-purple-100 rounded-lg flex-shrink-0">
+                            <Share2 className="text-purple-600" size={24} />
                         </div>
                     </div>
                 </Card>
 
                 {/* Nhân viên */}
-                <Card className="hover:shadow-lg transition-shadow">
+                <Card className="hover:shadow-lg transition-shadow p-4 sm:p-6">
                     <div className="flex items-start justify-between">
-                        <div>
-                            <p className="text-sm text-gray-600 mb-1">Nhân viên</p>
-                            <p className="text-3xl font-bold text-gray-900 mb-2">{stats.totalEmployees}</p>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-xs sm:text-sm text-gray-600 mb-1">Nhân viên</p>
+                            <p className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">{stats.totalEmployees}</p>
                             <p className="text-xs text-gray-500">Tất cả hoạt động</p>
                         </div>
-                        <div className="p-3 bg-gray-100 rounded-lg">
-                            <Users className="text-gray-600" size={28} />
+                        <div className="p-2 sm:p-3 bg-gray-100 rounded-lg flex-shrink-0">
+                            <Users className="text-gray-600" size={24} />
                         </div>
                     </div>
                 </Card>
             </div>
 
             {/* Thao tác nhanh */}
-            <Card title="Thao tác nhanh">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card title="Thao tác nhanh" className="p-4 sm:p-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                     {/* Tạo bài đăng */}
                     <button
                         onClick={() => navigate('/posts/create')}
-                        className="flex items-center gap-4 p-4 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors group"
+                        className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors group"
                     >
-                        <div className="p-3 bg-blue-500 group-hover:bg-blue-600 rounded-lg transition-colors">
-                            <Plus className="text-white" size={24} />
+                        <div className="p-2 sm:p-3 bg-blue-500 group-hover:bg-blue-600 rounded-lg transition-colors flex-shrink-0">
+                            <Plus className="text-white" size={20} />
                         </div>
-                        <div className="text-left">
-                            <p className="font-semibold text-gray-900">Tạo bài đăng</p>
-                            <p className="text-xs text-gray-600">Đăng bài lên mạng xã hội</p>
+                        <div className="text-left flex-1 min-w-0">
+                            <p className="text-sm sm:text-base font-semibold text-gray-900">Tạo bài đăng</p>
+                            <p className="text-xs text-gray-600 truncate">Đăng bài lên mạng xã hội</p>
                         </div>
                     </button>
 
                     {/* Upload video */}
                     <button
                         onClick={() => navigate('/media')}
-                        className="flex items-center gap-4 p-4 bg-green-50 hover:bg-green-100 rounded-lg transition-colors group"
+                        className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-green-50 hover:bg-green-100 rounded-lg transition-colors group"
                     >
-                        <div className="p-3 bg-green-500 group-hover:bg-green-600 rounded-lg transition-colors">
-                            <Upload className="text-white" size={24} />
+                        <div className="p-2 sm:p-3 bg-green-500 group-hover:bg-green-600 rounded-lg transition-colors flex-shrink-0">
+                            <Upload className="text-white" size={20} />
                         </div>
-                        <div className="text-left">
-                            <p className="font-semibold text-gray-900">Upload video</p>
-                            <p className="text-xs text-gray-600">Tải video lên hệ thống</p>
+                        <div className="text-left flex-1 min-w-0">
+                            <p className="text-sm sm:text-base font-semibold text-gray-900">Upload video</p>
+                            <p className="text-xs text-gray-600 truncate">Tải video lên hệ thống</p>
                         </div>
                     </button>
 
                     {/* Thêm nhân viên */}
                     <button
                         onClick={() => navigate('/employees')}
-                        className="flex items-center gap-4 p-4 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors group"
+                        className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors group sm:col-span-2 lg:col-span-1"
                     >
-                        <div className="p-3 bg-purple-500 group-hover:bg-purple-600 rounded-lg transition-colors">
-                            <UserPlus className="text-white" size={24} />
+                        <div className="p-2 sm:p-3 bg-purple-500 group-hover:bg-purple-600 rounded-lg transition-colors flex-shrink-0">
+                            <UserPlus className="text-white" size={20} />
                         </div>
-                        <div className="text-left">
-                            <p className="font-semibold text-gray-900">Thêm nhân viên</p>
-                            <p className="text-xs text-gray-600">Quản lý người dùng</p>
+                        <div className="text-left flex-1 min-w-0">
+                            <p className="text-sm sm:text-base font-semibold text-gray-900">Thêm nhân viên</p>
+                            <p className="text-xs text-gray-600 truncate">Quản lý người dùng</p>
                         </div>
                     </button>
                 </div>
             </Card>
 
             {/* Hoạt động gần đây */}
-            <Card title="Hoạt động gần đây">
-                <div className="space-y-3">
+            <Card title="Hoạt động gần đây" className="p-4 sm:p-6">
+                <div className="space-y-2 sm:space-y-3">
                     {recentPosts.length > 0 ? (
                         recentPosts.map((post) => {
                             const statusConfig = getStatusBadge(post.status);
                             return (
                                 <div
                                     key={post.id}
-                                    className="flex items-start gap-4 p-3 hover:bg-gray-50 rounded-lg transition-colors cursor-pointer"
+                                    className="flex items-start gap-3 sm:gap-4 p-2 sm:p-3 hover:bg-gray-50 rounded-lg transition-colors cursor-pointer"
                                     onClick={() => navigate(`/posts`)}
                                 >
-                                    {/* Icon based on post type */}
-                                    <div className="p-2 bg-gray-100 rounded-lg flex-shrink-0">
+                                    {/* Icon */}
+                                    <div className="p-1.5 sm:p-2 bg-gray-100 rounded-lg flex-shrink-0">
                                         {post.post_type === 'video' ? (
-                                            <Video className="text-gray-600" size={20} />
+                                            <Video className="text-gray-600" size={18} />
                                         ) : (
-                                            <FileText className="text-gray-600" size={20} />
+                                            <FileText className="text-gray-600" size={18} />
                                         )}
                                     </div>
 
                                     {/* Content */}
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-start justify-between gap-2">
-                                            <p className="font-medium text-gray-900 truncate">
+                                            <p className="text-sm sm:text-base font-medium text-gray-900 truncate">
                                                 {post.title || 'Bài viết không có tiêu đề'}
                                             </p>
-                                            <Badge variant={statusConfig.variant} className="flex-shrink-0">
+                                            <Badge variant={statusConfig.variant} className="flex-shrink-0 text-xs">
                                                 {statusConfig.label}
                                             </Badge>
                                         </div>
-                                        <p className="text-sm text-gray-600 truncate mt-1">
+                                        <p className="text-xs sm:text-sm text-gray-600 truncate mt-1">
                                             {post.content?.substring(0, 60)}...
                                         </p>
-                                        <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
+                                        <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-2 text-xs text-gray-500">
                                             <span className="flex items-center gap-1">
-                                                <Clock size={14} />
+                                                <Clock size={12} className="sm:w-[14px] sm:h-[14px]" />
                                                 {formatTimeAgo(post.created_at)}
                                             </span>
-                                            <span>•</span>
+                                            <span className="hidden sm:inline">•</span>
                                             <span className="capitalize">{post.post_type}</span>
                                             {post.scheduled_at && (
                                                 <>
-                                                    <span>•</span>
-                                                    <span>Lên lịch: {new Date(post.scheduled_at).toLocaleString('vi-VN')}</span>
+                                                    <span className="hidden sm:inline">•</span>
+                                                    <span className="hidden sm:inline">
+                                                        Lên lịch: {new Date(post.scheduled_at).toLocaleString('vi-VN')}
+                                                    </span>
                                                 </>
                                             )}
                                         </div>
@@ -270,9 +269,9 @@ const DashboardPage = () => {
                             );
                         })
                     ) : (
-                        <div className="text-center py-8 text-gray-500">
-                            <FileText size={48} className="mx-auto mb-2 opacity-50" />
-                            <p>Chưa có hoạt động nào</p>
+                        <div className="text-center py-6 sm:py-8 text-gray-500">
+                            <FileText size={40} className="mx-auto mb-2 opacity-50 sm:w-12 sm:h-12" />
+                            <p className="text-sm sm:text-base">Chưa có hoạt động nào</p>
                         </div>
                     )}
                 </div>

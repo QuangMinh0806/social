@@ -8,7 +8,7 @@ class LLMService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def get_all(self, skip: int = 0, limit: int = 100) -> List[dict]:
+    async def get_all(self, skip: int = 0, limit: int = 20) -> List[dict]:
         """Get all LLM configurations with pagination"""
         result = await self.db.execute(
             select(LLM).offset(skip).limit(limit)

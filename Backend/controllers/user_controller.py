@@ -16,7 +16,7 @@ class UserController:
         self, 
         current_user: User,
         skip: int = 0, 
-        limit: int = 100,
+        limit: int = 20,
         search: Optional[str] = None,
         role_filter: Optional[UserRole] = None,
         status_filter: Optional[UserStatus] = None

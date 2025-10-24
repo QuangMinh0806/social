@@ -12,7 +12,7 @@ class TemplateService:
     def __init__(self, db: AsyncSession):
         self.db = db
     
-    async def get_all(self, skip: int = 0, limit: int = 100) -> List[Dict]:
+    async def get_all(self, skip: int = 0, limit: int = 20) -> List[Dict]:
         """Get all templates with pagination"""
         query = select(Template).offset(skip).limit(limit)
         result = await self.db.execute(query)
@@ -26,7 +26,7 @@ class TemplateService:
         template = result.scalar_one_or_none()
         return self._to_dict(template) if template else None
     
-    async def get_by_category(self, category: str, skip: int = 0, limit: int = 100) -> List[Dict]:
+    async def get_by_category(self, category: str, skip: int = 0, limit: int = 20) -> List[Dict]:
         """Get templates by category"""
         query = (
             select(Template)
@@ -38,7 +38,7 @@ class TemplateService:
         templates = result.scalars().all()
         return [self._to_dict(template) for template in templates]
     
-    async def get_public_templates(self, skip: int = 0, limit: int = 100) -> List[Dict]:
+    async def get_public_templates(self, skip: int = 0, limit: int = 20) -> List[Dict]:
         """Get all public templates"""
         query = (
             select(Template)

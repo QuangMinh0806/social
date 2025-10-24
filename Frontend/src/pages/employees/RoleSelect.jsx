@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAuthStore } from '../../stores/authStore.js';
 
-const RoleSelect = ({ name, value, onChange }) => {
+const RoleSelect = ({ name, value, onChange, className = '' }) => {
     const getAvailableRoles = useAuthStore(state => state.getAvailableRoles);
     const currentUser = useAuthStore(state => state.user);
 
@@ -26,7 +26,7 @@ const RoleSelect = ({ name, value, onChange }) => {
             name={name}
             value={value}
             onChange={onChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className={`w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base ${className}`}
         >
             {options.map(opt => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>

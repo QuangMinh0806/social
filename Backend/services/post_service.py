@@ -23,7 +23,7 @@ class PostService:
     def __init__(self, db: AsyncSession):
         self.db = db
     
-    async def get_all(self, skip: int = 0, limit: int = 100) -> List[Dict]:
+    async def get_all(self, skip: int = 0, limit: int = 20) -> List[Dict]:
         query = (
             select(Post)
             .options(
@@ -52,7 +52,7 @@ class PostService:
         post = result.scalar_one_or_none()
         return self._to_dict(post) if post else None
     
-    async def get_by_status(self, status: str, skip: int = 0, limit: int = 100) -> List[Dict]:
+    async def get_by_status(self, status: str, skip: int = 0, limit: int = 20) -> List[Dict]:
         query = (
             select(Post)
             .options(
@@ -68,7 +68,7 @@ class PostService:
         posts = result.scalars().all()
         return [self._to_dict(p) for p in posts]
     
-    async def get_by_page(self, page_id: int, skip: int = 0, limit: int = 100) -> List[Dict]:
+    async def get_by_page(self, page_id: int, skip: int = 0, limit: int = 20) -> List[Dict]:
         query = (
             select(Post)
             .options(
@@ -84,7 +84,7 @@ class PostService:
         posts = result.scalars().all()
         return [self._to_dict(p) for p in posts]
     
-    async def get_by_user(self, user_id: int, skip: int = 0, limit: int = 100) -> List[Dict]:
+    async def get_by_user(self, user_id: int, skip: int = 0, limit: int = 20) -> List[Dict]:
         query = (
             select(Post)
             .options(
@@ -100,7 +100,7 @@ class PostService:
         posts = result.scalars().all()
         return [self._to_dict(p) for p in posts]
     
-    async def get_scheduled_posts(self, skip: int = 0, limit: int = 100) -> List[Dict]:
+    async def get_scheduled_posts(self, skip: int = 0, limit: int = 20) -> List[Dict]:
         query = (
             select(Post)
             .options(
@@ -117,7 +117,7 @@ class PostService:
         posts = result.scalars().all()
         return [self._to_dict(p) for p in posts]
     
-    async def get_posts_with_analytics(self, skip: int = 0, limit: int = 100) -> List[Dict]:
+    async def get_posts_with_analytics(self, skip: int = 0, limit: int = 20) -> List[Dict]:
         """Get posts with their analytics data"""
         query = (
             select(Post)

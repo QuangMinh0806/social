@@ -6,15 +6,16 @@ export default defineConfig({
   server: {
     port: 3000,
     open: true,
-    // allowedHosts: [
-    //   'localhost:3000',
-    //   'https://autosocial.tmedu.vn', 
-    // ],
-    // proxy: {
-    //   '/api': {
-    //     target: 'https://autosocialbe.tmedu.vn',
-    //     changeOrigin: true,
-    //   },
-    // },
+    allowedHosts: [
+      'localhost:3000',
+      'https://autosocial.tmedu.vn', 
+    ],
+    proxy: {
+      '/api': {
+        // target: 'https://autosocialbe.tmedu.vn',
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+    },
   },
 })

@@ -12,7 +12,7 @@ class MediaService:
     def __init__(self, db: AsyncSession):
         self.db = db
     
-    async def get_all(self, skip: int = 0, limit: int = 100) -> List[Dict]:
+    async def get_all(self, skip: int = 0, limit: int = 20) -> List[Dict]:
         query = select(MediaLibrary).offset(skip).limit(limit)
         result = await self.db.execute(query)
         media_files = result.scalars().all()
@@ -24,13 +24,13 @@ class MediaService:
         media = result.scalar_one_or_none()
         return self._to_dict(media) if media else None
     
-    async def get_by_user(self, user_id: int, skip: int = 0, limit: int = 100) -> List[Dict]:
+    async def get_by_user(self, user_id: int, skip: int = 0, limit: int = 20) -> List[Dict]:
         query = select(MediaLibrary).where(MediaLibrary.user_id == user_id).offset(skip).limit(limit)
         result = await self.db.execute(query)
         media_files = result.scalars().all()
         return [self._to_dict(m) for m in media_files]
     
-    async def get_by_type(self, file_type: str, skip: int = 0, limit: int = 100) -> List[Dict]:
+    async def get_by_type(self, file_type: str, skip: int = 0, limit: int = 20) -> List[Dict]:
         query = select(MediaLibrary).where(MediaLibrary.file_type == file_type).offset(skip).limit(limit)
         result = await self.db.execute(query)
         media_files = result.scalars().all()

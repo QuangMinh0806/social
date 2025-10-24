@@ -7,7 +7,7 @@ class LLMController:
     def __init__(self, db: AsyncSession):
         self.service = LLMService(db)
 
-    async def get_all(self, skip: int = 0, limit: int = 100):
+    async def get_all(self, skip: int = 0, limit: int = 20):
         """Get all LLM configurations"""
         try:
             llms = await self.service.get_all(skip, limit)

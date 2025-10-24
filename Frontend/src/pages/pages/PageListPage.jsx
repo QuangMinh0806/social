@@ -14,6 +14,7 @@ import Breadcrumb from '../../components/layout/Breadcrumb';
 import LoginWithFb from "../../components/LoginWithFb";
 import ConnectWithYoutube from '../../components/ConnectWithYoutube';
 import ConnectWithTiktok from '../../components/ConnectWithTiktok';
+
 const PageListPage = () => {
     const [pages, setPages] = useState([]);
     const [platforms, setPlatforms] = useState([]);
@@ -34,6 +35,16 @@ const PageListPage = () => {
         avatar_url: '',
         page_url: '',
     });
+
+    const initialFormState = {
+        name: '',
+        platform_id: '',
+        page_id: '',
+        access_token: '',
+        refesh_token: '',
+        avatar_url: '',
+        page_url: '',
+    };
 
     useEffect(() => {
         fetchPages();
@@ -84,26 +95,29 @@ const PageListPage = () => {
         try {
             setSubmitting(true);
 
-            // Prepare data with correct field names for API
+            // SỬA LỖI: Cập nhật apiData để gửi đủ trường
             const apiData = {
                 page_name: formData.name,
                 platform_id: parseInt(formData.platform_id),
                 page_id: formData.page_id,
                 access_token: formData.access_token || null,
+                refesh_token: formData.refesh_token || null,
+                avatar_url: formData.avatar_url || null,
+                page_url: formData.page_url || null,
             };
 
             if (editingPage) {
                 await pageService.update(editingPage.id, apiData);
                 toast.success('Cập nhật trang thành công');
             } else {
-                // For create, backend will automatically use current user ID
                 await pageService.create(apiData);
                 toast.success('Thêm trang thành công');
             }
 
             setShowModal(false);
             setEditingPage(null);
-            setFormData({ name: '', platform_id: '', page_id: '', access_token: '' });
+            setFormData(initialFormState); // SỬA LỖI: Reset state
+            setConnectType(""); // Reset kiểu kết nối
             fetchPages();
         } catch (error) {
             toast.error(editingPage ? 'Không thể cập nhật trang' : 'Không thể thêm trang');
@@ -127,9 +141,7 @@ const PageListPage = () => {
 
     // Statistics by platform
     const platformStats = useMemo(() => {
-        console.log('Platforms:', platforms);
         const stats = {};
-        console.log(platforms)
         platforms.forEach(platform => {
             const count = pages.filter(page => page.platform_id === platform.id).length;
             stats[platform.id] = {
@@ -163,11 +175,12 @@ const PageListPage = () => {
             {/* Platform Statistics */}
             <div className="mb-6">
                 <h2 className="text-xl font-semibold mb-4">Quản lý Page</h2>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                {/* SỬA RESPONSIVE 1: grid-cols-1 sm:grid-cols-2... */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
                     {Object.entries(platformStats).map(([platformId, stat]) => (
                         <div
                             key={platformId}
-                            className="bg-white rounded-lg p-4 shadow-sm text-center hover:shadow-md transition-shadow cursor-pointer"
+                            className={`bg-white rounded-lg p-4 shadow-sm text-center hover:shadow-md transition-shadow cursor-pointer ${filterPlatform === platformId ? 'ring-2 ring-blue-500' : ''}`}
                             onClick={() => setFilterPlatform(filterPlatform === platformId ? 'all' : platformId)}
                         >
                             <div className="flex justify-center mb-2">
@@ -191,17 +204,19 @@ const PageListPage = () => {
                 title="Danh sách Trang/Nhóm"
                 subtitle={`Tổng ${filteredPages.length}/${pages.length} trang`}
                 actions={
-                    <div className="flex gap-3">
+                    // SỬA RESPONSIVE 2: w-full sm:w-auto cho div và button
+                    <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                         <Button
                             icon={<Plus size={20} />}
                             onClick={() => setShowModal(true)}
+                            className="w-full justify-center sm:w-auto"
                         >
                             Kết nối Page mới
                         </Button>
                     </div>
                 }
             >
-                {/* Filter Controls */}
+                {/* Filter Controls (Code này đã responsive tốt) */}
                 <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
@@ -238,52 +253,57 @@ const PageListPage = () => {
                     />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* SỬA RESPONSIVE 3: Thêm xl:grid-cols-4 */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {filteredPages.map((page) => (
-                        <div key={page.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                            <div className="flex items-start justify-between mb-3">
-                                <div className="flex items-center gap-2">
-                                    {page.avatar_url ? (
-                                        <img
-                                            src={page.avatar_url}
-                                            alt={page.page_name}
-                                            className="w-10 h-10 rounded-full object-cover"
-                                        />
-                                    ) : (
-                                        getPlatformIcon(page.platform?.name)
-                                    )}
-                                    <div>
-                                        <h3 className="font-semibold text-gray-900">{page.page_name}</h3>
-                                        <p className="text-xs text-gray-500">ID: {page.page_id}</p>
+                        <div key={page.id} className="bg-white border rounded-lg p-4 hover:shadow-md transition-shadow flex flex-col justify-between">
+                            <div>
+                                <div className="flex items-start justify-between mb-3">
+                                    <div className="flex items-center gap-3 min-w-0">
+                                        {page.avatar_url ? (
+                                            <img
+                                                src={page.avatar_url}
+                                                alt={page.page_name}
+                                                className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+                                            />
+                                        ) : (
+                                            <div className="w-10 h-10 flex items-center justify-center flex-shrink-0">
+                                                {getPlatformIcon(page.platform?.name)}
+                                            </div>
+                                        )}
+                                        <div className="min-w-0">
+                                            <h3 className="font-semibold text-gray-900 truncate">{page.page_name}</h3>
+                                            <p className="text-xs text-gray-500">ID: {page.page_id}</p>
+                                        </div>
                                     </div>
+                                    <Badge variant={page.status === 'connected' ? 'success' : 'default'} className="flex-shrink-0 ml-2">
+                                        {page.status === 'connected' ? 'Đã kết nối' : page.status === 'disconnected' ? 'Ngắt kết nối' : 'Lỗi'}
+                                    </Badge>
                                 </div>
-                                <Badge variant={page.status === 'connected' ? 'success' : 'default'}>
-                                    {page.status === 'connected' ? 'Đã kết nối' : page.status === 'disconnected' ? 'Ngắt kết nối' : 'Lỗi'}
-                                </Badge>
-                            </div>
 
-                            <div className="space-y-2 mb-4">
-                                <p className="text-sm text-gray-600">
-                                    <span className="font-medium">Nền tảng:</span> {page.platform?.name || 'N/A'}
-                                </p>
-                                {page.follower_count > 0 && (
+                                <div className="space-y-2 mb-4">
                                     <p className="text-sm text-gray-600">
-                                        <span className="font-medium">Người theo dõi:</span> {page.follower_count.toLocaleString()}
+                                        <span className="font-medium">Nền tảng:</span> {page.platform?.name || 'N/A'}
                                     </p>
-                                )}
-                                {page.page_url && (
-                                    <a
-                                        href={page.page_url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-sm text-blue-600 hover:underline block truncate"
-                                    >
-                                        {page.page_url}
-                                    </a>
-                                )}
+                                    {page.follower_count > 0 && (
+                                        <p className="text-sm text-gray-600">
+                                            <span className="font-medium">Người theo dõi:</span> {page.follower_count.toLocaleString()}
+                                        </p>
+                                    )}
+                                    {page.page_url && (
+                                        <a
+                                            href={page.page_url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-sm text-blue-600 hover:underline block truncate"
+                                        >
+                                            {page.page_url}
+                                        </a>
+                                    )}
+                                </div>
                             </div>
 
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 mt-2">
                                 <Button
                                     size="sm"
                                     variant="outline"
@@ -299,6 +319,7 @@ const PageListPage = () => {
                                             avatar_url: page.avatar_url,
                                             page_url: page.page_url,
                                         });
+                                        setConnectType("manual"); // Mặc định là manual khi sửa
                                         setShowModal(true);
                                     }}
                                 >
@@ -334,9 +355,10 @@ const PageListPage = () => {
                 onClose={() => {
                     setShowModal(false);
                     setEditingPage(null);
-                    setFormData({ name: '', platform_id: '', page_id: '', access_token: '' });
+                    setFormData(initialFormState); // SỬA LỖI: Reset state
+                    setConnectType("");
                 }}
-                title={editingPage ? 'Chỉnh sửa trang' : 'Thêm trang mới'}
+                title={editingPage ? 'Chỉnh sửa trang' : 'Kết nối trang mới'}
             >
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <Select
@@ -382,43 +404,47 @@ const PageListPage = () => {
                             />
 
                             <Input
-                                label="Access Token *"
+                                label="Access Token"
                                 value={formData.access_token}
                                 onChange={(e) => setFormData({ ...formData, access_token: e.target.value })}
-                                placeholder="Nhập Access Token"
+                                placeholder="Nhập Access Token (tùy chọn)"
                             />
 
                             <Input
                                 label="Refresh Token"
-                                value={formData.access_token}
+                                // SỬA LỖI: value={formData.refesh_token}
+                                value={formData.refesh_token}
                                 onChange={(e) => setFormData({ ...formData, refesh_token: e.target.value })}
                                 placeholder="Nhập Refresh Token (tùy chọn)"
                             />
 
                             <Input
                                 label="URL trang"
-                                value={formData.name}
+                                // SỬA LỖI: value={formData.page_url}
+                                value={formData.page_url}
                                 onChange={(e) => setFormData({ ...formData, page_url: e.target.value })}
-                                placeholder="Nhập url trang"
-                                required
+                                placeholder="Nhập url trang (tùy chọn)"
                             />
 
 
                             <Input
-                                label="Avatar_url"
-                                value={formData.name}
+                                label="Avatar URL"
+                                // SỬA LỖI: value={formData.avatar_url}
+                                value={formData.avatar_url}
                                 onChange={(e) => setFormData({ ...formData, avatar_url: e.target.value })}
-                                placeholder="Nhập avatar_url"
-                                required
+                                placeholder="Nhập avatar url (tùy chọn)"
                             />
-                            <div className="flex justify-end gap-2 mt-6">
+                            {/* SỬA RESPONSIVE 4: flex-col-reverse sm:flex-row và w-full sm:w-auto */}
+                            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 mt-6">
                                 <Button
                                     type="button"
                                     variant="outline"
+                                    className="w-full sm:w-auto justify-center"
                                     onClick={() => {
                                         setShowModal(false);
                                         setEditingPage(null);
-                                        setFormData({ name: '', platform_id: '', page_id: '', access_token: '', refesh_token: '', avatar_url: '', page_url: '' });
+                                        setFormData(initialFormState);
+                                        setConnectType("");
                                     }}
                                 >
                                     Hủy
@@ -426,6 +452,7 @@ const PageListPage = () => {
                                 <Button
                                     type="submit"
                                     disabled={submitting}
+                                    className="w-full sm:w-auto justify-center"
                                 >
                                     {submitting ? 'Đang xử lý...' : (editingPage ? 'Cập nhật' : 'Thêm mới')}
                                 </Button>
@@ -434,16 +461,16 @@ const PageListPage = () => {
                     )}
 
                     {connectType === "auto" && (
-                        <>
+                        <div className='pt-4'>
                             {formData.platform_id == 10 && <LoginWithFb />}
                             {formData.platform_id == 11 && <LoginWithFb />}
                             {formData.platform_id == 14 && <ConnectWithYoutube />}
                             {formData.platform_id == 15 && <ConnectWithTiktok />}
-                        </>
+                            {!formData.platform_id && (
+                                <p className="text-gray-500 text-center">Vui lòng chọn nền tảng ở trên để bắt đầu kết nối.</p>
+                            )}
+                        </div>
                     )}
-
-
-
                 </form>
             </Modal>
         </div>

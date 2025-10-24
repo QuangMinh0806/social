@@ -12,7 +12,7 @@ class HashtagService:
     def __init__(self, db: AsyncSession):
         self.db = db
     
-    async def get_all(self, skip: int = 0, limit: int = 100) -> List[Dict]:
+    async def get_all(self, skip: int = 0, limit: int = 20) -> List[Dict]:
         query = select(Hashtag).offset(skip).limit(limit)
         result = await self.db.execute(query)
         hashtags = result.scalars().all()

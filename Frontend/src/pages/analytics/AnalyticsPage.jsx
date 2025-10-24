@@ -24,7 +24,6 @@ const AnalyticsPage = () => {
       const response = await analyticsService.getDashboardStats();
       setDashboardData(response.data);
 
-      // Fetch top posts
       const topPostsResponse = await analyticsService.getTopPosts(10);
       setTopPosts(topPostsResponse.data);
     } catch (error) {
@@ -35,7 +34,6 @@ const AnalyticsPage = () => {
     }
   };
 
-  // Format number to K, M format
   const formatNumber = (num) => {
     if (!num) return '0';
     if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
@@ -43,7 +41,6 @@ const AnalyticsPage = () => {
     return num.toString();
   };
 
-  // Mock engagement data for charts (since we don't have time-series data from API)
   const engagementData = [
     { name: 'T2', views: 4000, likes: 2400, comments: 400, shares: 240 },
     { name: 'T3', views: 3000, likes: 1398, comments: 210, shares: 180 },
@@ -102,8 +99,9 @@ const AnalyticsPage = () => {
     <div>
       <Breadcrumb items={[{ label: 'Thống kê & Phân tích' }]} />
 
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Thống kê & Phân tích</h1>
+      {/* Header */}
+      <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Thống kê & Phân tích</h1>
         <Select
           value={timeRange}
           onChange={(e) => setTimeRange(e.target.value)}
@@ -113,28 +111,30 @@ const AnalyticsPage = () => {
             { value: '90days', label: '90 ngày qua' },
             { value: 'year', label: 'Năm nay' },
           ]}
+          className="w-full sm:w-auto"
         />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6 mb-4 sm:mb-6">
         {stats.map((stat, index) => {
           const Icon = stat.icon;
           const TrendIcon = stat.trend === 'up' ? TrendingUp : TrendingDown;
 
           return (
-            <Card key={index}>
+            <Card key={index} className="p-4 sm:p-6">
               <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <p className="text-sm text-gray-600">{stat.label}</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
-                  <div className={`flex items-center gap-1 mt-2 text-sm ${stat.trend === 'up' ? 'text-green-600' : 'text-red-600'
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs sm:text-sm text-gray-600 truncate">{stat.label}</p>
+                  <p className="text-xl sm:text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
+                  <div className={`flex items-center gap-1 mt-2 text-xs sm:text-sm ${stat.trend === 'up' ? 'text-green-600' : 'text-red-600'
                     }`}>
-                    <TrendIcon size={16} />
+                    <TrendIcon size={14} className="sm:w-4 sm:h-4" />
                     <span>{stat.change}</span>
                   </div>
                 </div>
-                <div className={`p-3 bg-${stat.color}-100 rounded-full`}>
-                  <Icon className={`text-${stat.color}-600`} size={24} />
+                <div className={`p-2 sm:p-3 bg-${stat.color}-100 rounded-full flex-shrink-0`}>
+                  <Icon className={`text-${stat.color}-600 w-5 h-5 sm:w-6 sm:h-6`} />
                 </div>
               </div>
             </Card>
@@ -142,9 +142,11 @@ const AnalyticsPage = () => {
         })}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+      {/* Charts Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-4 sm:mb-6">
+        {/* Pie Chart */}
         <Card title="Phân bố nền tảng" className="lg:col-span-1">
-          <ResponsiveContainer width="100%" height={300}>
+          <ResponsiveContainer width="100%" height={250} className="sm:h-[300px]">
             <PieChart>
               <Pie
                 data={platformData}
@@ -152,7 +154,8 @@ const AnalyticsPage = () => {
                 cy="50%"
                 labelLine={false}
                 label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                outerRadius={80}
+                outerRadius={60}
+                className="sm:outerRadius-[80]"
                 fill="#8884d8"
                 dataKey="value"
               >
@@ -165,14 +168,15 @@ const AnalyticsPage = () => {
           </ResponsiveContainer>
         </Card>
 
+        {/* Line Chart */}
         <Card title="Tương tác theo ngày" className="lg:col-span-2">
-          <ResponsiveContainer width="100%" height={300}>
+          <ResponsiveContainer width="100%" height={250} className="sm:h-[300px]">
             <LineChart data={engagementData}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
+              <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+              <YAxis tick={{ fontSize: 12 }} />
               <Tooltip />
-              <Legend />
+              <Legend wrapperStyle={{ fontSize: '12px' }} />
               <Line type="monotone" dataKey="likes" stroke="#ef4444" strokeWidth={2} name="Lượt thích" />
               <Line type="monotone" dataKey="comments" stroke="#10b981" strokeWidth={2} name="Bình luận" />
               <Line type="monotone" dataKey="shares" stroke="#8b5cf6" strokeWidth={2} name="Chia sẻ" />
@@ -181,14 +185,15 @@ const AnalyticsPage = () => {
         </Card>
       </div>
 
+      {/* Bar Chart */}
       <Card title="Lượt xem theo ngày">
-        <ResponsiveContainer width="100%" height={300}>
+        <ResponsiveContainer width="100%" height={250} className="sm:h-[300px]">
           <BarChart data={engagementData}>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" />
-            <YAxis />
+            <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+            <YAxis tick={{ fontSize: 12 }} />
             <Tooltip />
-            <Legend />
+            <Legend wrapperStyle={{ fontSize: '12px' }} />
             <Bar dataKey="views" fill="#3b82f6" name="Lượt xem" />
           </BarChart>
         </ResponsiveContainer>

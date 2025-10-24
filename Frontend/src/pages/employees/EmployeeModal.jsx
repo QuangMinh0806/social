@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { FaTimes, FaSave, FaUser, FaEnvelope, FaLock, FaUserTag, FaImage } from 'react-icons/fa';
 import { useAuthStore } from '../../stores/authStore.js';
 import RoleSelect from './RoleSelect.jsx';
+
 const EmployeeModal = ({ isOpen, onClose, onSave, employee }) => {
   const [formData, setFormData] = useState({
     username: '',
@@ -20,14 +21,13 @@ const EmployeeModal = ({ isOpen, onClose, onSave, employee }) => {
       setFormData({
         username: employee.username || '',
         email: employee.email || '',
-        password_hash: '', // Don't show password
+        password_hash: '',
         full_name: employee.full_name || '',
         avatar_url: employee.avatar_url || '',
         role: employee.role || 'admin',
         status: employee.status || 'active'
       });
     } else {
-      // Default role should be the first available role for current user
       const availableRoles = useAuthStore.getState().getAvailableRoles?.() || [];
       const defaultRole = availableRoles.length ? availableRoles[0].value : 'admin';
 
@@ -47,7 +47,6 @@ const EmployeeModal = ({ isOpen, onClose, onSave, employee }) => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-    // Clear error when user types
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
@@ -89,10 +88,8 @@ const EmployeeModal = ({ isOpen, onClose, onSave, employee }) => {
       return;
     }
 
-    // Prepare data to send
     const dataToSend = { ...formData };
 
-    // If updating and no password provided, remove password field
     if (employee && !dataToSend.password_hash) {
       delete dataToSend.password_hash;
     }
@@ -103,29 +100,34 @@ const EmployeeModal = ({ isOpen, onClose, onSave, employee }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-3 sm:p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-4 flex items-center justify-between rounded-t-lg">
-          <h2 className="text-xl font-bold flex items-center gap-2">
-            <FaUser />
-            {employee ? 'Chỉnh sửa nhân viên' : 'Thêm nhân viên mới'}
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between rounded-t-lg sticky top-0 z-10">
+          <h2 className="text-base sm:text-xl font-bold flex items-center gap-2">
+            <FaUser className="text-sm sm:text-base" />
+            <span className="hidden sm:inline">
+              {employee ? 'Chỉnh sửa nhân viên' : 'Thêm nhân viên mới'}
+            </span>
+            <span className="sm:hidden">
+              {employee ? 'Chỉnh sửa' : 'Thêm mới'}
+            </span>
           </h2>
           <button
             onClick={onClose}
-            className="text-white hover:text-gray-200 transition"
+            className="text-white hover:text-gray-200 transition p-1"
           >
-            <FaTimes size={24} />
+            <FaTimes size={20} className="sm:w-6 sm:h-6" />
           </button>
         </div>
 
         {/* Body */}
-        <form onSubmit={handleSubmit} className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
             {/* Username */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <FaUser className="inline mr-2 text-blue-600" />
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+                <FaUser className="inline mr-1 sm:mr-2 text-blue-600 text-xs sm:text-sm" />
                 Tên đăng nhập <span className="text-red-500">*</span>
               </label>
               <input
@@ -133,8 +135,8 @@ const EmployeeModal = ({ isOpen, onClose, onSave, employee }) => {
                 name="username"
                 value={formData.username}
                 onChange={handleChange}
-                disabled={!!employee} // Disable when editing
-                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.username ? 'border-red-500' : 'border-gray-300'
+                disabled={!!employee}
+                className={`w-full px-3 sm:px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base ${errors.username ? 'border-red-500' : 'border-gray-300'
                   } ${employee ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                 placeholder="Nhập tên đăng nhập"
               />
@@ -145,8 +147,8 @@ const EmployeeModal = ({ isOpen, onClose, onSave, employee }) => {
 
             {/* Email */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <FaEnvelope className="inline mr-2 text-blue-600" />
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+                <FaEnvelope className="inline mr-1 sm:mr-2 text-blue-600 text-xs sm:text-sm" />
                 Email <span className="text-red-500">*</span>
               </label>
               <input
@@ -154,7 +156,7 @@ const EmployeeModal = ({ isOpen, onClose, onSave, employee }) => {
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.email ? 'border-red-500' : 'border-gray-300'
+                className={`w-full px-3 sm:px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base ${errors.email ? 'border-red-500' : 'border-gray-300'
                   }`}
                 placeholder="Nhập email"
               />
@@ -165,8 +167,8 @@ const EmployeeModal = ({ isOpen, onClose, onSave, employee }) => {
 
             {/* Password */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <FaLock className="inline mr-2 text-blue-600" />
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+                <FaLock className="inline mr-1 sm:mr-2 text-blue-600 text-xs sm:text-sm" />
                 Mật khẩu {!employee && <span className="text-red-500">*</span>}
               </label>
               <input
@@ -174,9 +176,9 @@ const EmployeeModal = ({ isOpen, onClose, onSave, employee }) => {
                 name="password_hash"
                 value={formData.password_hash}
                 onChange={handleChange}
-                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.password_hash ? 'border-red-500' : 'border-gray-300'
+                className={`w-full px-3 sm:px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base ${errors.password_hash ? 'border-red-500' : 'border-gray-300'
                   }`}
-                placeholder={employee ? "Để trống nếu không đổi mật khẩu" : "Nhập mật khẩu"}
+                placeholder={employee ? "Để trống nếu không đổi" : "Nhập mật khẩu"}
               />
               {errors.password_hash && (
                 <p className="text-red-500 text-xs mt-1">{errors.password_hash}</p>
@@ -185,8 +187,8 @@ const EmployeeModal = ({ isOpen, onClose, onSave, employee }) => {
 
             {/* Full Name */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <FaUser className="inline mr-2 text-blue-600" />
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+                <FaUser className="inline mr-1 sm:mr-2 text-blue-600 text-xs sm:text-sm" />
                 Họ và tên <span className="text-red-500">*</span>
               </label>
               <input
@@ -194,7 +196,7 @@ const EmployeeModal = ({ isOpen, onClose, onSave, employee }) => {
                 name="full_name"
                 value={formData.full_name}
                 onChange={handleChange}
-                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.full_name ? 'border-red-500' : 'border-gray-300'
+                className={`w-full px-3 sm:px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base ${errors.full_name ? 'border-red-500' : 'border-gray-300'
                   }`}
                 placeholder="Nhập họ và tên"
               />
@@ -205,13 +207,10 @@ const EmployeeModal = ({ isOpen, onClose, onSave, employee }) => {
 
             {/* Role */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <FaUserTag className="inline mr-2 text-blue-600" />
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+                <FaUserTag className="inline mr-1 sm:mr-2 text-blue-600 text-xs sm:text-sm" />
                 Vai trò <span className="text-red-500">*</span>
               </label>
-              {
-                // Build role options based on current user's available roles
-              }
               <RoleSelect
                 name="role"
                 value={formData.role}
@@ -221,14 +220,14 @@ const EmployeeModal = ({ isOpen, onClose, onSave, employee }) => {
 
             {/* Status */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                 Trạng thái <span className="text-red-500">*</span>
               </label>
               <select
                 name="status"
                 value={formData.status}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
               >
                 <option value="active">Hoạt động</option>
                 <option value="inactive">Ngưng hoạt động</option>
@@ -238,8 +237,8 @@ const EmployeeModal = ({ isOpen, onClose, onSave, employee }) => {
 
             {/* Avatar URL */}
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <FaImage className="inline mr-2 text-blue-600" />
+              <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
+                <FaImage className="inline mr-1 sm:mr-2 text-blue-600 text-xs sm:text-sm" />
                 URL Avatar
               </label>
               <input
@@ -247,7 +246,7 @@ const EmployeeModal = ({ isOpen, onClose, onSave, employee }) => {
                 name="avatar_url"
                 value={formData.avatar_url}
                 onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
                 placeholder="Nhập URL ảnh đại diện"
               />
               {formData.avatar_url && (
@@ -255,7 +254,7 @@ const EmployeeModal = ({ isOpen, onClose, onSave, employee }) => {
                   <img
                     src={formData.avatar_url}
                     alt="Preview"
-                    className="h-20 w-20 rounded-full object-cover border-2 border-gray-300"
+                    className="h-16 w-16 sm:h-20 sm:w-20 rounded-full object-cover border-2 border-gray-300"
                     onError={(e) => {
                       e.target.style.display = 'none';
                     }}
@@ -266,19 +265,19 @@ const EmployeeModal = ({ isOpen, onClose, onSave, employee }) => {
           </div>
 
           {/* Footer */}
-          <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+          <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3 mt-4 sm:mt-6 pt-3 sm:pt-4 border-t">
             <button
               type="button"
               onClick={onClose}
-              className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
+              className="w-full sm:w-auto px-4 sm:px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition text-sm sm:text-base font-medium"
             >
               Hủy
             </button>
             <button
               type="submit"
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2"
+              className="w-full sm:w-auto px-4 sm:px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center justify-center gap-2 text-sm sm:text-base font-medium"
             >
-              <FaSave />
+              <FaSave className="text-sm" />
               {employee ? 'Cập nhật' : 'Thêm mới'}
             </button>
           </div>

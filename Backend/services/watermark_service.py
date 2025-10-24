@@ -12,7 +12,7 @@ class WatermarkService:
     def __init__(self, db: AsyncSession):
         self.db = db
     
-    async def get_all(self, skip: int = 0, limit: int = 100) -> List[Dict]:
+    async def get_all(self, skip: int = 0, limit: int = 20) -> List[Dict]:
         """Get all watermarks"""
         query = select(Watermark).offset(skip).limit(limit)
         result = await self.db.execute(query)

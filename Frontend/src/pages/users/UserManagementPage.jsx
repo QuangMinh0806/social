@@ -7,9 +7,6 @@ import {
     Search,
     Edit,
     Trash2,
-    Key,
-    Filter,
-    MoreVertical,
     User,
     Shield,
     ShieldCheck,
@@ -20,16 +17,8 @@ const UserManagementPage = () => {
     const { user: currentUser, canManageRole, canViewRole, getRoleLabel, getAvailableRoles } = useAuth();
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [filters, setFilters] = useState({
-        search: '',
-        role: '',
-        status: ''
-    });
-    const [pagination, setPagination] = useState({
-        skip: 0,
-        limit: 10,
-        total: 0
-    });
+    const [filters, setFilters] = useState({ search: '', role: '', status: '' });
+    const [pagination, setPagination] = useState({ skip: 0, limit: 10, total: 0 });
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
     const [selectedUser, setSelectedUser] = useState(null);
@@ -60,10 +49,7 @@ const UserManagementPage = () => {
     };
 
     const handleFilterChange = (key, value) => {
-        setFilters(prev => ({
-            ...prev,
-            [key]: value
-        }));
+        setFilters(prev => ({ ...prev, [key]: value }));
         setPagination(prev => ({ ...prev, skip: 0 }));
     };
 
@@ -71,7 +57,6 @@ const UserManagementPage = () => {
         if (!window.confirm('Bạn có chắc chắn muốn xóa user này?')) {
             return;
         }
-
         try {
             const result = await userService.deleteUser(userId);
             if (result.success) {
@@ -104,9 +89,7 @@ const UserManagementPage = () => {
             inactive: { label: 'Không hoạt động', className: 'bg-gray-100 text-gray-800' },
             suspended: { label: 'Bị khóa', className: 'bg-red-100 text-red-800' }
         };
-
         const config = statusConfig[status] || statusConfig.inactive;
-
         return (
             <span className={`px-2 py-1 text-xs font-medium rounded-full ${config.className}`}>
                 {config.label}
@@ -138,7 +121,7 @@ const UserManagementPage = () => {
 
             {/* Filters */}
             <div className="bg-white p-4 rounded-lg shadow space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                     {/* Search */}
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -181,7 +164,7 @@ const UserManagementPage = () => {
                             setFilters({ search: '', role: '', status: '' });
                             setPagination(prev => ({ ...prev, skip: 0 }));
                         }}
-                        className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
+                        className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 w-full sm:w-auto"
                     >
                         Xóa bộ lọc
                     </button>
@@ -204,21 +187,11 @@ const UserManagementPage = () => {
                         <table className="min-w-full divide-y divide-gray-200">
                             <thead className="bg-gray-50">
                                 <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        User
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Quyền
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Trạng thái
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Đăng nhập cuối
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Hành động
-                                    </th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quyền</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Đăng nhập cuối</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hành động</th>
                                 </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200">
@@ -232,31 +205,20 @@ const UserManagementPage = () => {
                                                     </div>
                                                 </div>
                                                 <div className="ml-4">
-                                                    <div className="text-sm font-medium text-gray-900">
-                                                        {user.full_name || user.username}
-                                                    </div>
-                                                    <div className="text-sm text-gray-500">
-                                                        {user.email}
-                                                    </div>
+                                                    <div className="text-sm font-medium text-gray-900">{user.full_name || user.username}</div>
+                                                    <div className="text-sm text-gray-500">{user.email}</div>
                                                 </div>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex items-center">
                                                 {getRoleIcon(user.role)}
-                                                <span className="ml-2 text-sm text-gray-900">
-                                                    {getRoleLabel(user.role)}
-                                                </span>
+                                                <span className="ml-2 text-sm text-gray-900">{getRoleLabel(user.role)}</span>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            {getStatusBadge(user.status)}
-                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">{getStatusBadge(user.status)}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {user.last_login
-                                                ? new Date(user.last_login).toLocaleDateString('vi-VN')
-                                                : 'Chưa đăng nhập'
-                                            }
+                                            {user.last_login ? new Date(user.last_login).toLocaleDateString('vi-VN') : 'Chưa đăng nhập'}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                             <div className="flex space-x-2">
@@ -272,7 +234,6 @@ const UserManagementPage = () => {
                                                         >
                                                             <Edit className="h-4 w-4" />
                                                         </button>
-
                                                         {user.id !== currentUser?.id && (
                                                             <button
                                                                 onClick={() => handleDeleteUser(user.id)}
@@ -315,15 +276,11 @@ const UserManagementPage = () => {
                 <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                     <div>
                         <p className="text-sm text-gray-700">
-                            Hiển thị{' '}
-                            <span className="font-medium">{pagination.skip + 1}</span>
-                            {' '}-{' '}
+                            Hiển thị <span className="font-medium">{pagination.skip + 1}</span> -{' '}
                             <span className="font-medium">
                                 {Math.min(pagination.skip + pagination.limit, pagination.skip + filteredUsers.length)}
-                            </span>
-                            {' '}trong tổng số{' '}
-                            <span className="font-medium">{filteredUsers.length}</span>
-                            {' '}kết quả
+                            </span>{' '}
+                            trong tổng số <span className="font-medium">{filteredUsers.length}</span> kết quả
                         </p>
                     </div>
                     <div>
@@ -377,22 +334,14 @@ const UserManagementPage = () => {
     );
 };
 
-// Create User Modal Component
 const CreateUserModal = ({ onClose, onSuccess }) => {
     const { getAvailableRoles } = useAuth();
-    const [formData, setFormData] = useState({
-        username: '',
-        email: '',
-        password: '',
-        full_name: '',
-        role: 'admin'
-    });
+    const [formData, setFormData] = useState({ username: '', email: '', password: '', full_name: '', role: 'admin' });
     const [loading, setLoading] = useState(false);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
-
         try {
             const result = await userService.createUser(formData);
             if (result.success) {
@@ -410,9 +359,8 @@ const CreateUserModal = ({ onClose, onSuccess }) => {
 
     return (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-            <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
                 <h3 className="text-lg font-bold text-gray-900 mb-4">Tạo User Mới</h3>
-
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700">Tên đăng nhập</label>
@@ -424,7 +372,6 @@ const CreateUserModal = ({ onClose, onSuccess }) => {
                             className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
                         />
                     </div>
-
                     <div>
                         <label className="block text-sm font-medium text-gray-700">Email</label>
                         <input
@@ -435,7 +382,6 @@ const CreateUserModal = ({ onClose, onSuccess }) => {
                             className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
                         />
                     </div>
-
                     <div>
                         <label className="block text-sm font-medium text-gray-700">Mật khẩu</label>
                         <input
@@ -447,7 +393,6 @@ const CreateUserModal = ({ onClose, onSuccess }) => {
                             className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
                         />
                     </div>
-
                     <div>
                         <label className="block text-sm font-medium text-gray-700">Họ tên</label>
                         <input
@@ -457,7 +402,6 @@ const CreateUserModal = ({ onClose, onSuccess }) => {
                             className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
                         />
                     </div>
-
                     <div>
                         <label className="block text-sm font-medium text-gray-700">Quyền</label>
                         <select
@@ -472,19 +416,18 @@ const CreateUserModal = ({ onClose, onSuccess }) => {
                             ))}
                         </select>
                     </div>
-
                     <div className="flex space-x-3 pt-4">
                         <button
                             type="submit"
                             disabled={loading}
-                            className="flex-1 bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 disabled:opacity-50"
+                            className="w-full sm:w-auto bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 disabled:opacity-50"
                         >
                             {loading ? 'Đang tạo...' : 'Tạo User'}
                         </button>
                         <button
                             type="button"
                             onClick={onClose}
-                            className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400"
+                            className="w-full sm:w-auto bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400"
                         >
                             Hủy
                         </button>
@@ -495,7 +438,6 @@ const CreateUserModal = ({ onClose, onSuccess }) => {
     );
 };
 
-// Edit User Modal Component
 const EditUserModal = ({ user, onClose, onSuccess }) => {
     const [formData, setFormData] = useState({
         email: user.email || '',
@@ -507,7 +449,6 @@ const EditUserModal = ({ user, onClose, onSuccess }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
-
         try {
             const result = await userService.updateUser(user.id, formData);
             if (result.success) {
@@ -525,9 +466,8 @@ const EditUserModal = ({ user, onClose, onSuccess }) => {
 
     return (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-            <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
                 <h3 className="text-lg font-bold text-gray-900 mb-4">Chỉnh sửa User</h3>
-
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700">Email</label>
@@ -539,7 +479,6 @@ const EditUserModal = ({ user, onClose, onSuccess }) => {
                             className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
                         />
                     </div>
-
                     <div>
                         <label className="block text-sm font-medium text-gray-700">Họ tên</label>
                         <input
@@ -549,7 +488,6 @@ const EditUserModal = ({ user, onClose, onSuccess }) => {
                             className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
                         />
                     </div>
-
                     <div>
                         <label className="block text-sm font-medium text-gray-700">Trạng thái</label>
                         <select
@@ -562,19 +500,18 @@ const EditUserModal = ({ user, onClose, onSuccess }) => {
                             <option value="suspended">Bị khóa</option>
                         </select>
                     </div>
-
                     <div className="flex space-x-3 pt-4">
                         <button
                             type="submit"
                             disabled={loading}
-                            className="flex-1 bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 disabled:opacity-50"
+                            className="w-full sm:w-auto bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 disabled:opacity-50"
                         >
                             {loading ? 'Đang cập nhật...' : 'Cập nhật'}
                         </button>
                         <button
                             type="button"
                             onClick={onClose}
-                            className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400"
+                            className="w-full sm:w-auto bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400"
                         >
                             Hủy
                         </button>
